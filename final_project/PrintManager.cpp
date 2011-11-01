@@ -14,9 +14,9 @@ using namespace Gdiplus;
 
 #define MAX_LOADSTRING 100
 
-REAL doubleToReal(const double value)
+REAL doubleToReal(const double value, const double zoom)
 {
-	return (float)value;
+	return (float)(value * zoom);
 }
 
 void PrintManager::PrintArrow(dnl::Point begin, dnl::Point end)
@@ -50,28 +50,28 @@ void PrintManager::PrintArrow(dnl::Point begin, dnl::Point end)
 	SolidBrush   brush(Color(80, 51, 204, 255));
 
 	path.AddLine(
-		doubleToReal(AL.m_x + m_originX), 
-		doubleToReal(AL.m_y + m_originY), 
-		doubleToReal(AR.m_x + m_originX), 
-		doubleToReal(AR.m_y + m_originY));
+		doubleToReal(AL.m_x + m_originX, m_zoom), 
+		doubleToReal(AL.m_y + m_originY, m_zoom), 
+		doubleToReal(AR.m_x + m_originX, m_zoom), 
+		doubleToReal(AR.m_y + m_originY, m_zoom));
 	
 	path.AddLine(
-		doubleToReal(AR.m_x + m_originX), 
-		doubleToReal(AR.m_y + m_originY), 
-		doubleToReal(end.m_x + m_originX), 
-		doubleToReal(end.m_y + m_originY));
+		doubleToReal(AR.m_x + m_originX, m_zoom), 
+		doubleToReal(AR.m_y + m_originY, m_zoom), 
+		doubleToReal(end.m_x + m_originX, m_zoom), 
+		doubleToReal(end.m_y + m_originY, m_zoom));
 	
 	path.AddLine(
-		doubleToReal(end.m_x + m_originX), 
-		doubleToReal(end.m_y + m_originY), 
-		doubleToReal(AL.m_x + m_originX), 
-		doubleToReal(AL.m_y + m_originY));
+		doubleToReal(end.m_x + m_originX, m_zoom), 
+		doubleToReal(end.m_y + m_originY, m_zoom), 
+		doubleToReal(AL.m_x + m_originX, m_zoom), 
+		doubleToReal(AL.m_y + m_originY, m_zoom));
 
 	path.AddLine(
-		doubleToReal(AL.m_x + m_originX), 
-		doubleToReal(AL.m_y + m_originY), 
-		doubleToReal(AR.m_x + m_originX), 
-		doubleToReal(AR.m_y + m_originY));
+		doubleToReal(AL.m_x + m_originX, m_zoom), 
+		doubleToReal(AL.m_y + m_originY, m_zoom), 
+		doubleToReal(AR.m_x + m_originX, m_zoom), 
+		doubleToReal(AR.m_y + m_originY, m_zoom));
 
 	graphics.DrawPath(&pen, &path);
 	graphics.FillPath(&brush, &path);
@@ -83,8 +83,8 @@ void PrintManager::PrintLine(dnl::Point begin, dnl::Point end)
 
 	Pen      pen(Color(255, 0, 0, 255));
 	graphics.DrawLine(&pen, 
-		doubleToReal(begin.m_x + m_originX), 
-		doubleToReal(begin.m_y + m_originY), 
-		doubleToReal(end.m_x + m_originX), 
-		doubleToReal(end.m_y + m_originY));
+		doubleToReal(begin.m_x + m_originX, m_zoom), 
+		doubleToReal(begin.m_y + m_originY, m_zoom), 
+		doubleToReal(end.m_x + m_originX, m_zoom), 
+		doubleToReal(end.m_y + m_originY, m_zoom));
 }

@@ -42,6 +42,7 @@ INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 
 int originX = 300;
 int originY = 300;
+double zoom = 1;
 
 
 void DrawLine(HDC hdc, REAL x1, REAL y1, REAL x2, REAL y2)
@@ -61,12 +62,17 @@ VOID OnPaint(HDC hdc)
 
 	DrawLine(hdc, 0, 0, 200, 100);
 
-	PrintManager printMan(originX, originY, &hdc);
+	PrintManager printMan(zoom, originX, originY, &hdc);
 
 	Strip myStrip(dnl::Point(10, 10), dnl::Point(200, 200), 50, 80);
 	myStrip.print(printMan);
 	//myStrip
 
+	// Draw origin
+	dnl::Point originPointLL(originX - 40, originY - 40);
+	dnl::Point originPointUR(originX + 40, originY + 40);
+	Strip origin(originPointLL, originPointUR, 40, 40);
+	origin.print(printMan);
 
 	//DrawRectangle(hdc, 10, 10, 100, 50);
 
@@ -161,7 +167,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
    // Initialize GDI+.
    GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
    
-   wndClass.style          = CS_HREDRAW | CS_VREDRAW;
+   wndClass.style          = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
    wndClass.lpfnWndProc    = WndProc;
    wndClass.cbClsExtra     = 0;
    wndClass.cbWndExtra     = 0;
@@ -189,6 +195,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
   
    ShowWindow(hWnd, 1);
    UpdateWindow(hWnd);
+
+   PWINDOWINFO windowInfo = new WINDOWINFO;
+   GetWindowInfo(hWnd, windowInfo);
+   RECT windowRect = windowInfo->rcWindow;
+   originX = (windowRect.right - windowRect.left) / 2;
+   originY = (windowRect.bottom - windowRect.top) / 2;
 
    while(GetMessage(&msg, NULL, 0, 0))
    {
@@ -221,7 +233,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
 	wcex.cbSize = sizeof(WNDCLASSEX);
 
-	wcex.style			= CS_HREDRAW | CS_VREDRAW;
+	wcex.style			= CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
 	wcex.lpfnWndProc	= WndProc;
 	wcex.cbClsExtra		= 0;
 	wcex.cbWndExtra		= 0;
@@ -280,6 +292,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	int wmId, wmEvent;
 	PAINTSTRUCT ps;
+	POINTS ptsCursor;
 	HDC hdc;
 
 	switch (message)
@@ -308,6 +321,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
+	case WM_LBUTTONDBLCLK:
+		// For more information see
+		// http://msdn.microsoft.com/en-us/library/ms645602%28v=VS.85%29.aspx#processing_dblclick
+		ptsCursor = MAKEPOINTS(lParam); 
+		originX = ptsCursor.x;
+		originY = ptsCursor.y;
+		zoom *= 2;
+		::InvalidateRect(hWnd, NULL, TRUE);
+		break;
+	case WM_RBUTTONDBLCLK:
+		ptsCursor = MAKEPOINTS(lParam); 
+		originX = ptsCursor.x;
+		originY = ptsCursor.y;
+		zoom /= 2;
+		::InvalidateRect(hWnd, NULL, TRUE);
+		break;
+
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}

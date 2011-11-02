@@ -14,9 +14,37 @@ using namespace Gdiplus;
 
 #define MAX_LOADSTRING 100
 
-REAL doubleToReal(const double value, const double zoom)
+Color colourToColor(Colour colour)
 {
-	return (float)(value * zoom);
+	return Color(colour.m_opacity, colour.m_red, colour.m_green, colour.m_blue);
+}
+
+PrintManager::PrintManager(
+	const dnl::Point & LLWindow,
+	const dnl::Point & URWindow,
+	const double multX,
+	const double multY,
+	HDC *hdc)
+	: m_LLWindow(LLWindow),
+	m_URWindow(URWindow),
+	m_multX(multX),
+	m_multY(multY),
+	m_hdc(hdc),
+	m_solidBlue(255, 0, 0, 255),
+	m_seeThroughBlue(40, 0, 0, 255),
+	m_superSeeThroughBlue(40, 0, 0, 255)
+{
+
+}
+
+float PrintManager::transformX(const double xValue)
+{
+	return (float) (xValue - m_LLWindow.m_x) * m_multX;
+}
+
+float PrintManager::transformY(const double yValue)
+{
+	return (float) (yValue - m_LLWindow.m_y) * m_multY;
 }
 
 void PrintManager::PrintArrow(dnl::Point begin, dnl::Point end)
@@ -29,7 +57,6 @@ void PrintManager::PrintArrow(dnl::Point begin, dnl::Point end)
 	{
 		dnl::Point vectorEB = begin - end;
 		dnl::Point unitVectorEB = vectorEB.getUnitVector();
-		//dnl::Point perpUnitVectorEB(unitVectorEB.m_y * -1, unitVectorEB.m_x);
 		dnl::Point pointA = (unitVectorEB * arrowLength) + end;
 
 		dnl::Point vectorAE = end - pointA;
@@ -42,7 +69,6 @@ void PrintManager::PrintArrow(dnl::Point begin, dnl::Point end)
 
 	// DRAW triangle { AL, AR, END }
 
-
 	Graphics graphics(*m_hdc);
 
 	GraphicsPath path;
@@ -50,41 +76,88 @@ void PrintManager::PrintArrow(dnl::Point begin, dnl::Point end)
 	SolidBrush   brush(Color(80, 51, 204, 255));
 
 	path.AddLine(
-		doubleToReal(AL.m_x + m_originX, m_zoom), 
-		doubleToReal(AL.m_y + m_originY, m_zoom), 
-		doubleToReal(AR.m_x + m_originX, m_zoom), 
-		doubleToReal(AR.m_y + m_originY, m_zoom));
+		transformX(AL.m_x), 
+		transformY(AL.m_y), 
+		transformX(AR.m_x), 
+		transformY(AR.m_y));
 	
 	path.AddLine(
-		doubleToReal(AR.m_x + m_originX, m_zoom), 
-		doubleToReal(AR.m_y + m_originY, m_zoom), 
-		doubleToReal(end.m_x + m_originX, m_zoom), 
-		doubleToReal(end.m_y + m_originY, m_zoom));
+		transformX(AR.m_x), 
+		transformY(AR.m_y), 
+		transformX(end.m_x), 
+		transformY(end.m_y));
 	
 	path.AddLine(
-		doubleToReal(end.m_x + m_originX, m_zoom), 
-		doubleToReal(end.m_y + m_originY, m_zoom), 
-		doubleToReal(AL.m_x + m_originX, m_zoom), 
-		doubleToReal(AL.m_y + m_originY, m_zoom));
+		transformX(end.m_x), 
+		transformY(end.m_y), 
+		transformX(AL.m_x), 
+		transformY(AL.m_y));
 
 	path.AddLine(
-		doubleToReal(AL.m_x + m_originX, m_zoom), 
-		doubleToReal(AL.m_y + m_originY, m_zoom), 
-		doubleToReal(AR.m_x + m_originX, m_zoom), 
-		doubleToReal(AR.m_y + m_originY, m_zoom));
+		transformX(AL.m_x), 
+		transformY(AL.m_y), 
+		transformX(AR.m_x), 
+		transformY(AR.m_y));
 
 	graphics.DrawPath(&pen, &path);
 	graphics.FillPath(&brush, &path);
 }
 
-void PrintManager::PrintLine(dnl::Point begin, dnl::Point end)
+void PrintManager::PrintLine(dnl::Point begin, dnl::Point end, Colour *colour/* =(255, 0, 0, 255)*/)
 {
+	if(colour == NULL)
+	{
+		colour = &m_solidBlue;
+	}
+
 	Graphics graphics(*m_hdc);
 
-	Pen      pen(Color(255, 0, 0, 255));
+	Pen      pen(colourToColor(*colour));
 	graphics.DrawLine(&pen, 
-		doubleToReal(begin.m_x + m_originX, m_zoom), 
-		doubleToReal(begin.m_y + m_originY, m_zoom), 
-		doubleToReal(end.m_x + m_originX, m_zoom), 
-		doubleToReal(end.m_y + m_originY, m_zoom));
+		transformX(begin.m_x), 
+		transformY(begin.m_y), 
+		transformX(end.m_x), 
+		transformY(end.m_y));
+}
+
+void PrintManager::PrintGridX(
+	const double width, 
+	const double minX, 
+	const double maxX, 
+	const double minY, 
+	const double maxY, 
+	Colour *colour /* = NULL*/)
+{
+	if(colour == NULL)
+	{
+		colour = &m_seeThroughBlue;
+	}
+
+	for(double x = minX; x <= maxX; x += width)
+	{
+		dnl::Point begin(x, minY);
+		dnl::Point end(x, maxY);
+		PrintLine(begin, end, colour);
+	}
+}
+
+void PrintManager::PrintGridY(
+	const double width,  
+	const double minX, 
+	const double maxX, 
+	const double minY, 
+	const double maxY,
+	Colour *colour /* = NULL*/)
+{
+	if(colour == NULL)
+	{
+		colour = &m_seeThroughBlue;
+	}
+
+	for(double y = minY; y <= maxY; y += width)
+	{
+		dnl::Point begin(minX, y);
+		dnl::Point end(maxX, y);
+		PrintLine(begin, end, colour);
+	}
 }

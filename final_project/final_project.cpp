@@ -7,8 +7,22 @@
 #include <gdiplus.h>
 #include "Strip.h"
 #include "Point.h"
+#include <sstream>
+#include <string>
 
 #include "final_project.h"
+
+#include "zmouse.h"
+
+//
+// Mouse Wheel rotation stuff, only define if we are
+// on a version of the OS that does not support
+// WM_MOUSEWHEEL messages.
+//
+#ifndef WM_MOUSEWHEEL
+#define WM_MOUSEWHEEL WM_MOUSELAST+1 
+    // Message ID for IntelliMouse wheel
+#endif
 
 using namespace Gdiplus;
 #pragma comment (lib,"Gdiplus.lib")
@@ -40,36 +54,101 @@ INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 
 
 
-int originX = 300;
-int originY = 300;
-double zoom = 1;
-
+dnl::Point LLWindow = dnl::Point(0,0);
+dnl::Point URWindow = dnl::Point(100,100);
 
 void DrawLine(HDC hdc, REAL x1, REAL y1, REAL x2, REAL y2)
 {
 	Graphics graphics(hdc);
 
 	Pen      pen(Color(255, 0, 0, 255));
-	graphics.DrawLine(&pen, x1 + originX, y1 + originY, x2 + originX, y2 + originY);
+	graphics.DrawLine(&pen, x1, y1, x2, y2);
 }
 
-VOID OnPaint(HDC hdc)
+VOID OnPaint(HWND hWnd, HDC hdc)
 {
 	// For more info see
 	// http://msdn.microsoft.com/en-us/library/ms533802%28v=VS.85%29.aspx
 
+
+	// TODO: Get window size (incase it changed) and subtract/add 
+	//       to our window size the X inc/dec and Y inc/dec
+
 	Graphics graphics(hdc);
 
-	DrawLine(hdc, 0, 0, 200, 100);
+	PWINDOWINFO windowInfo = new WINDOWINFO;
+	GetWindowInfo(hWnd, windowInfo);
+	RECT windowRect = windowInfo->rcWindow;
+	float winX = (float)windowRect.right - windowRect.left;
+	float winY = (float)windowRect.bottom - windowRect.top;
 
-	PrintManager printMan(zoom, originX, originY, &hdc);
+	Pen      pen(Color(0,0,0));
+	graphics.DrawLine(&pen, 0.0, 0.0, winX, winY);
+	graphics.DrawLine(&pen, 0.0, winY, winX, 0.0);
+
+	// Output text
+	FontFamily  fontFamily(L"Times New Roman");
+	Font        font(&fontFamily, 18, FontStyleRegular, UnitPixel);
+	SolidBrush  solidBrush(Color(255, 0, 0, 0));
+
+	std::wstringstream info;
+	info << "URWindow = (" << URWindow.m_x << ", " << URWindow.m_y << ") " << std::endl;
+	info << "LLWindow = (" << LLWindow.m_x << ", " << LLWindow.m_y << ") " << std::endl;
+	info << "Centre = (" << (URWindow.m_x + LLWindow.m_x) / 2 << ", " << (URWindow.m_y + LLWindow.m_y) / 2 << ") " << std::endl;
+	
+	double width = URWindow.m_x - LLWindow.m_x;
+	double height = URWindow.m_y - LLWindow.m_y;
+	double multX = winX / width;
+	double multY = winY / height;
+
+	for(int i = 0; true; i++)
+	{
+		WCHAR currLine[1000] = {0};
+		info.getline(currLine, 1000);
+		if(currLine[0] == 0)
+		{
+			break;
+		}
+
+		PointF      pointF(30.0f, i*30.0f);
+		graphics.DrawString(currLine, -1, &font, pointF, &solidBrush);
+	}
+	// Output graphics
+
+	PrintManager printMan(LLWindow, URWindow, multX, multY, &hdc);
 
 	Strip myStrip(dnl::Point(10, 10), dnl::Point(200, 200), 50, 80);
 	myStrip.print(printMan);
 	//myStrip
 
+	printMan.PrintGridY(2000, -1000, 1000, -1000, 1000);
+	printMan.PrintGridX(2000, -1000, 1000, -1000, 1000);
+	printMan.PrintGridY(2000, -1000, 1000, -1000, 1000);
+	printMan.PrintGridX(2000, -1000, 1000, -1000, 1000);
+	printMan.PrintGridY(2000, -1000, 1000, -1000, 1000);
+	printMan.PrintGridX(2000, -1000, 1000, -1000, 1000);
+	printMan.PrintGridY(2000, -1000, 1000, -1000, 1000);
+	printMan.PrintGridX(2000, -1000, 1000, -1000, 1000);
+
+	printMan.PrintGridY(500, -1000, 1000, -1000, 1000);
+	printMan.PrintGridX(500, -1000, 1000, -1000, 1000);
+	printMan.PrintGridY(125, -1000, 1000, -1000, 1000);
+	printMan.PrintGridX(125, -1000, 1000, -1000, 1000);
+	printMan.PrintGridY(31.25, -1000, 1000, -1000, 1000, &printMan.m_superSeeThroughBlue);
+	printMan.PrintGridX(31.25, -1000, 1000, -1000, 1000, &printMan.m_superSeeThroughBlue);
+
+	printMan.PrintLine(dnl::Point(-1000,-1000), dnl::Point(1000,1000));
+	printMan.PrintLine(dnl::Point(-500,-1000), dnl::Point(500,1000));
+	printMan.PrintLine(dnl::Point(0,-1000), dnl::Point(0,1000));
+	printMan.PrintLine(dnl::Point(500,-1000), dnl::Point(-500,1000));
+	printMan.PrintLine(dnl::Point(1000,-1000), dnl::Point(-1000,1000));
+	printMan.PrintLine(dnl::Point(1000,-500), dnl::Point(-1000,500));
+	printMan.PrintLine(dnl::Point(1000,0), dnl::Point(-1000,0));
+	printMan.PrintLine(dnl::Point(1000,500), dnl::Point(-1000,-500));
+
+
 	// Draw origin
-	dnl::Point originPointLL(originX - 40, originY - 40);
+	/*dnl::Point originPointLL(originX - 40, originY - 40);
 	dnl::Point originPointUR(originX + 40, originY + 40);
 	Strip origin(originPointLL, originPointUR, 40, 40);
 	origin.print(printMan);
@@ -119,13 +198,13 @@ VOID OnPaint(HDC hdc)
 		graphics.DrawPath(&pen, &path);
 		graphics.FillPath(&brush, &path);
 	}
-
+*/
 
 }
 
 
 
-
+UINT uMSH_MOUSEWHEEL = 0;
 
 
 
@@ -144,6 +223,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	WNDCLASS            wndClass;
 	GdiplusStartupInput gdiplusStartupInput;
 	ULONG_PTR           gdiplusToken;
+
+	uMSH_MOUSEWHEEL =
+     RegisterWindowMessage(MSH_MOUSEWHEEL); 
+    if ( !uMSH_MOUSEWHEEL )
+    {
+        MessageBox(NULL, L"Register Mouse Scroll Failed!", L"Error",MB_OK);
+        return msg.wParam;
+    }
 
 	// Initialize global strings
 	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -192,15 +279,21 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
       NULL,                     // window menu handle
       hInstance,                // program instance handle
       NULL);                    // creation parameters
-  
-   ShowWindow(hWnd, 1);
-   UpdateWindow(hWnd);
 
    PWINDOWINFO windowInfo = new WINDOWINFO;
    GetWindowInfo(hWnd, windowInfo);
    RECT windowRect = windowInfo->rcWindow;
-   originX = (windowRect.right - windowRect.left) / 2;
-   originY = (windowRect.bottom - windowRect.top) / 2;
+
+   const double width = (windowRect.right - windowRect.left);
+   const double height = (windowRect.bottom - windowRect.top);
+
+   LLWindow.m_x = 0 - (width / 2);
+   LLWindow.m_y = 0 - (height / 2);
+   URWindow.m_x = LLWindow.m_x + width;
+   URWindow.m_y = LLWindow.m_y + height;
+
+   ShowWindow(hWnd, 1);
+   UpdateWindow(hWnd);
 
    while(GetMessage(&msg, NULL, 0, 0))
    {
@@ -278,6 +371,39 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
+
+const double zoomFactor = 2;
+
+void zoomIn()
+{
+	double centreX = (LLWindow.m_x + URWindow.m_x) / 2;
+	double centreY = (LLWindow.m_y + URWindow.m_y) / 2;
+
+	double width = (URWindow.m_x - LLWindow.m_x) / zoomFactor;
+	double height = (URWindow.m_y - LLWindow.m_y) / zoomFactor;
+
+	LLWindow.m_x = centreX - (width/2);
+	LLWindow.m_y = centreY - (height/2);
+	URWindow.m_x = LLWindow.m_x + width;
+	URWindow.m_y = LLWindow.m_y + height;
+}
+
+void zoomOut()
+{
+	double centreX = (LLWindow.m_x + URWindow.m_x) / 2;
+	double centreY = (LLWindow.m_y + URWindow.m_y) / 2;
+
+	double width = (URWindow.m_x - LLWindow.m_x) * zoomFactor;
+	double height = (URWindow.m_y - LLWindow.m_y) * zoomFactor;
+
+	LLWindow.m_x = centreX - (width/2);
+	LLWindow.m_y = centreY - (height/2);
+	URWindow.m_x = LLWindow.m_x + width;
+	URWindow.m_y = LLWindow.m_y + height;
+
+}
+
+
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -315,120 +441,112 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_PAINT:
 		hdc = BeginPaint(hWnd, &ps);
-		OnPaint(hdc);
+		OnPaint(hWnd, hdc);
 		EndPaint(hWnd, &ps);
 		break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
-	case WM_LBUTTONDBLCLK:
-		// For more information see
-		// http://msdn.microsoft.com/en-us/library/ms645602%28v=VS.85%29.aspx#processing_dblclick
-		ptsCursor = MAKEPOINTS(lParam); 
-		originX = ptsCursor.x;
-		originY = ptsCursor.y;
-		zoom *= 2;
-		::InvalidateRect(hWnd, NULL, TRUE);
-		break;
-	case WM_RBUTTONDBLCLK:
-		ptsCursor = MAKEPOINTS(lParam); 
-		originX = ptsCursor.x;
-		originY = ptsCursor.y;
-		zoom /= 2;
-		::InvalidateRect(hWnd, NULL, TRUE);
-		break;
+	case WM_LBUTTONUP:
+		{	
+			PWINDOWINFO windowInfo = new WINDOWINFO;
+			GetWindowInfo(hWnd, windowInfo);
+			RECT windowRect = windowInfo->rcWindow;
 
+			ptsCursor = MAKEPOINTS(lParam); 
+			ptsCursor.x;
+			ptsCursor.y;
+
+			double width = URWindow.m_x - LLWindow.m_x;
+			double height = URWindow.m_y - LLWindow.m_y;
+
+			double windowWidth = windowRect.right - windowRect.left;
+			double windowHeight = windowRect.bottom - windowRect.top;
+
+			double percentOfWindowX = ptsCursor.x / windowWidth;
+			double percentOfWindowY = ptsCursor.y / windowHeight;
+			double pointInUniverseX = (percentOfWindowX * width) + LLWindow.m_x;
+			double pointInUniverseY = (percentOfWindowY * height) + LLWindow.m_y;
+			
+			LLWindow.m_x = pointInUniverseX - (width/2);
+			LLWindow.m_y = pointInUniverseY - (height/2);
+			URWindow.m_x = LLWindow.m_x + width;
+			URWindow.m_y = LLWindow.m_y + height;
+
+			::InvalidateRect(hWnd, NULL, TRUE);
+			break;
+		}
+	case WM_LBUTTONDBLCLK:
+		{
+			// For more information see
+			// http://msdn.microsoft.com/en-us/library/ms645602%28v=VS.85%29.aspx#processing_dblclick
+			/*ptsCursor = MAKEPOINTS(lParam); 
+
+			double width = URWindow.m_x - LLWindow.m_x;
+			double height = URWindow.m_y - LLWindow.m_y;
+
+			width *= 1.5;
+			height *= 1.5;
+
+			LLWindow.m_x = LLWindow.m_x - (width / 4);
+			URWindow.m_x = URWindow.m_x + (width / 4);
+
+			LLWindow.m_y = LLWindow.m_y - (height / 4);
+			URWindow.m_y = URWindow.m_y + (height / 4);*/
+
+			/*LLWindow.m_x = ptsCursor.x - (width / 2);
+			LLWindow.m_y = ptsCursor.y - (height / 2);
+
+			URWindow.m_x = LLWindow.m_x + width;
+			URWindow.m_y = LLWindow.m_y + height;*/
+
+			::InvalidateRect(hWnd, NULL, TRUE);
+			break;
+		}
+	case WM_RBUTTONDBLCLK:
+		{
+			/*ptsCursor = MAKEPOINTS(lParam);
+			
+			double width = URWindow.m_x - LLWindow.m_x;
+			double height = URWindow.m_y - LLWindow.m_y;
+
+			width /= 1.5;
+			height /= 1.5;
+
+			LLWindow.m_x = LLWindow.m_x + (width / 4);
+			URWindow.m_x = URWindow.m_x - (width / 4);
+
+			LLWindow.m_y = LLWindow.m_y + (height / 4);
+			URWindow.m_y = URWindow.m_y - (height / 4);*/
+
+			/*LLWindow.m_x = ptsCursor.x - (width / 2);
+			LLWindow.m_y = ptsCursor.y - (height / 2);
+
+			URWindow.m_x = LLWindow.m_x + width;
+			URWindow.m_y = LLWindow.m_y + height;*/
+
+			::InvalidateRect(hWnd, NULL, TRUE);
+			break;
+		}
+        case WM_MOUSEWHEEL:
+		{
+			((short) HIWORD(wParam)< 0) ? zoomOut() : zoomIn();
+			::InvalidateRect(hWnd, NULL, TRUE);
+			break;
+		}
 	default:
+
+	    if( message == uMSH_MOUSEWHEEL )
+        {
+           ((int)wParam < 0) ? zoomOut() : zoomIn();
+			::InvalidateRect(hWnd, NULL, TRUE);
+            break;
+        }
+
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
-
-/*INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, PSTR, INT iCmdShow)
-{
-   HWND                hWnd;
-   MSG                 msg;
-   WNDCLASS            wndClass;
-   GdiplusStartupInput gdiplusStartupInput;
-   ULONG_PTR           gdiplusToken;
-   
-   // Initialize GDI+.
-   GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
-   
-   wndClass.style          = CS_HREDRAW | CS_VREDRAW;
-   wndClass.lpfnWndProc    = WndProc;
-   wndClass.cbClsExtra     = 0;
-   wndClass.cbWndExtra     = 0;
-   wndClass.hInstance      = hInstance;
-   wndClass.hIcon          = LoadIcon(NULL, IDI_APPLICATION);
-   wndClass.hCursor        = LoadCursor(NULL, IDC_ARROW);
-   wndClass.hbrBackground  = (HBRUSH)GetStockObject(WHITE_BRUSH);
-   wndClass.lpszMenuName   = NULL;
-   wndClass.lpszClassName  = TEXT("GettingStarted");
-   
-   RegisterClass(&wndClass);
-   
-   hWnd = CreateWindow(
-      TEXT("GettingStarted"),   // window class name
-      TEXT("Getting Started"),  // window caption
-      WS_OVERLAPPEDWINDOW,      // window style
-      CW_USEDEFAULT,            // initial x position
-      CW_USEDEFAULT,            // initial y position
-      CW_USEDEFAULT,            // initial x size
-      CW_USEDEFAULT,            // initial y size
-      NULL,                     // parent window handle
-      NULL,                     // window menu handle
-      hInstance,                // program instance handle
-      NULL);                    // creation parameters
-	  
-   ShowWindow(hWnd, iCmdShow);
-   UpdateWindow(hWnd);
-   
-   while(GetMessage(&msg, NULL, 0, 0))
-   {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
-   }
-   
-   GdiplusShutdown(gdiplusToken);
-   return msg.wParam;
-}  // WinMain
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // Message handler for about box.
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)

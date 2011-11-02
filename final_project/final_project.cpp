@@ -45,7 +45,11 @@ INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 
 
 
-
+/*--------------------------------------------------------------
+ * Configuration
+ *--------------------------------------------------------------*/
+unsigned int SCREENSIZE_X = 800;
+unsigned int SCREENSIZE_Y = 480;
 
 
 
@@ -79,27 +83,35 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 	PWINDOWINFO windowInfo = new WINDOWINFO;
 	GetWindowInfo(hWnd, windowInfo);
 	RECT windowRect = windowInfo->rcWindow;
+
 	float winX = (float)windowRect.right - windowRect.left;
 	float winY = (float)windowRect.bottom - windowRect.top;
-
+	
+#ifdef _DEBUG
+	// Output window lines
 	Pen      pen(Color(0,0,0));
-	graphics.DrawLine(&pen, 0.0, 0.0, winX, winY);
-	graphics.DrawLine(&pen, 0.0, winY, winX, 0.0);
+	// Horizontal & Vertical
+	graphics.DrawLine(&pen, 0.0, winY/2, winX, winY/2);
+	graphics.DrawLine(&pen, winX/2, 0.0, winX/2, winY);
+#endif
 
 	// Output text
-	FontFamily  fontFamily(L"Times New Roman");
-	Font        font(&fontFamily, 18, FontStyleRegular, UnitPixel);
+	FontFamily  fontFamily(L"Helvetica");
+	Font        font(&fontFamily, 12, FontStyleRegular, UnitPixel);
 	SolidBrush  solidBrush(Color(255, 0, 0, 0));
 
 	std::wstringstream info;
+	info << "CONTROLS:" << std::endl;
+	info << "Left click to centre the screen on that location." << std::endl;
+	info << "UP key / Scroll up to zoom in." << std::endl;
+	info << "DOWN key / Scroll down to zoom out." << std::endl;
+#ifdef _DEBUG
+	info << " " << std::endl;
+	info << "DEBUG INFO:" << std::endl;
 	info << "URWindow = (" << URWindow.m_x << ", " << URWindow.m_y << ") " << std::endl;
 	info << "LLWindow = (" << LLWindow.m_x << ", " << LLWindow.m_y << ") " << std::endl;
 	info << "Centre = (" << (URWindow.m_x + LLWindow.m_x) / 2 << ", " << (URWindow.m_y + LLWindow.m_y) / 2 << ") " << std::endl;
-	
-	double width = URWindow.m_x - LLWindow.m_x;
-	double height = URWindow.m_y - LLWindow.m_y;
-	double multX = winX / width;
-	double multY = winY / height;
+#endif
 
 	for(int i = 0; true; i++)
 	{
@@ -110,26 +122,26 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 			break;
 		}
 
-		PointF      pointF(30.0f, i*30.0f);
+		PointF      pointF(20.0f, i*18.0f + 20.0f);
+		graphics.SetTextRenderingHint(TextRenderingHintAntiAlias);
 		graphics.DrawString(currLine, -1, &font, pointF, &solidBrush);
 	}
+	
 	// Output graphics
+
+	double width = URWindow.m_x - LLWindow.m_x;
+	double height = URWindow.m_y - LLWindow.m_y;
+	double multX = winX / width;
+	double multY = winY / height;
 
 	PrintManager printMan(LLWindow, URWindow, multX, multY, &hdc);
 
 	Strip myStrip(dnl::Point(10, 10), dnl::Point(200, 200), 50, 80);
 	myStrip.print(printMan);
-	//myStrip
 
+	// Print Grid lines
 	printMan.PrintGridY(2000, -1000, 1000, -1000, 1000);
 	printMan.PrintGridX(2000, -1000, 1000, -1000, 1000);
-	printMan.PrintGridY(2000, -1000, 1000, -1000, 1000);
-	printMan.PrintGridX(2000, -1000, 1000, -1000, 1000);
-	printMan.PrintGridY(2000, -1000, 1000, -1000, 1000);
-	printMan.PrintGridX(2000, -1000, 1000, -1000, 1000);
-	printMan.PrintGridY(2000, -1000, 1000, -1000, 1000);
-	printMan.PrintGridX(2000, -1000, 1000, -1000, 1000);
-
 	printMan.PrintGridY(500, -1000, 1000, -1000, 1000);
 	printMan.PrintGridX(500, -1000, 1000, -1000, 1000);
 	printMan.PrintGridY(125, -1000, 1000, -1000, 1000);
@@ -137,6 +149,7 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 	printMan.PrintGridY(31.25, -1000, 1000, -1000, 1000, &printMan.m_superSeeThroughBlue);
 	printMan.PrintGridX(31.25, -1000, 1000, -1000, 1000, &printMan.m_superSeeThroughBlue);
 
+	// Print Starflake
 	printMan.PrintLine(dnl::Point(-1000,-1000), dnl::Point(1000,1000));
 	printMan.PrintLine(dnl::Point(-500,-1000), dnl::Point(500,1000));
 	printMan.PrintLine(dnl::Point(0,-1000), dnl::Point(0,1000));
@@ -197,16 +210,10 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 
 		graphics.DrawPath(&pen, &path);
 		graphics.FillPath(&brush, &path);
-	}
-*/
-
+	}*/
 }
 
-
-
 UINT uMSH_MOUSEWHEEL = 0;
-
-
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
@@ -216,7 +223,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
- 	// TODO: Place code here.
 	HACCEL				hAccelTable;
 	HWND                hWnd;
 	MSG                 msg;
@@ -224,8 +230,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	GdiplusStartupInput gdiplusStartupInput;
 	ULONG_PTR           gdiplusToken;
 
-	uMSH_MOUSEWHEEL =
-     RegisterWindowMessage(MSH_MOUSEWHEEL); 
+	uMSH_MOUSEWHEEL = RegisterWindowMessage(MSH_MOUSEWHEEL); 
     if ( !uMSH_MOUSEWHEEL )
     {
         MessageBox(NULL, L"Register Mouse Scroll Failed!", L"Error",MB_OK);
@@ -237,72 +242,60 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	LoadString(hInstance, IDC_FINAL_PROJECT, szWindowClass, MAX_LOADSTRING);
 	MyRegisterClass(hInstance);
 
-	// Perform application initialization:
-	/*if (!InitInstance (hInstance, nCmdShow))
-	{
-		return FALSE;
-	}*/
-
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_FINAL_PROJECT));
 
+	// Initialize GDI+.
+	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
+	wndClass.style          = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
+	wndClass.lpfnWndProc    = WndProc;
+	wndClass.cbClsExtra     = 0;
+	wndClass.cbWndExtra     = 0;
+	wndClass.hInstance      = hInstance;
+	wndClass.hIcon          = LoadIcon(NULL, IDI_APPLICATION);
+	wndClass.hCursor        = LoadCursor(NULL, IDC_ARROW);
+	wndClass.hbrBackground  = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	wndClass.lpszMenuName   = NULL;
+	wndClass.lpszClassName  = TEXT("CS6345 Final Project: Doubly Connected Edge List");
 
+	RegisterClass(&wndClass);
 
+	hWnd = CreateWindow(
+		TEXT("CS6345 Final Project: Doubly Connected Edge List"),   // window class name
+		TEXT("CS6345 Final Project: Doubly Connected Edge List"),  // window caption
+		WS_OVERLAPPEDWINDOW,      // window style
+		CW_USEDEFAULT,            // initial x position
+		CW_USEDEFAULT,            // initial y position
+		SCREENSIZE_X/*CW_USEDEFAULT*/,            // initial x size
+		SCREENSIZE_Y/*CW_USEDEFAULT*/,            // initial y size
+		NULL,                     // parent window handle
+		NULL,                     // window menu handle
+		hInstance,                // program instance handle
+		NULL);                    // creation parameters
 
+	PWINDOWINFO windowInfo = new WINDOWINFO;
+	GetWindowInfo(hWnd, windowInfo);
+	RECT windowRect = windowInfo->rcWindow;
 
-   
-   // Initialize GDI+.
-   GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
-   
-   wndClass.style          = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
-   wndClass.lpfnWndProc    = WndProc;
-   wndClass.cbClsExtra     = 0;
-   wndClass.cbWndExtra     = 0;
-   wndClass.hInstance      = hInstance;
-   wndClass.hIcon          = LoadIcon(NULL, IDI_APPLICATION);
-   wndClass.hCursor        = LoadCursor(NULL, IDC_ARROW);
-   wndClass.hbrBackground  = (HBRUSH)GetStockObject(WHITE_BRUSH);
-   wndClass.lpszMenuName   = NULL;
-   wndClass.lpszClassName  = TEXT("CS6345 Final Project: Doubly Connected Edge List");
-   
-   RegisterClass(&wndClass);
-   
-   hWnd = CreateWindow(
-      TEXT("CS6345 Final Project: Doubly Connected Edge List"),   // window class name
-      TEXT("CS6345 Final Project: Doubly Connected Edge List"),  // window caption
-      WS_OVERLAPPEDWINDOW,      // window style
-      CW_USEDEFAULT,            // initial x position
-      CW_USEDEFAULT,            // initial y position
-      CW_USEDEFAULT,            // initial x size
-      CW_USEDEFAULT,            // initial y size
-      NULL,                     // parent window handle
-      NULL,                     // window menu handle
-      hInstance,                // program instance handle
-      NULL);                    // creation parameters
+	const double width = (windowRect.right - windowRect.left);
+	const double height = (windowRect.bottom - windowRect.top);
 
-   PWINDOWINFO windowInfo = new WINDOWINFO;
-   GetWindowInfo(hWnd, windowInfo);
-   RECT windowRect = windowInfo->rcWindow;
+	LLWindow.m_x = 0 - (width / 2);
+	LLWindow.m_y = 0 - (height / 2);
+	URWindow.m_x = LLWindow.m_x + width;
+	URWindow.m_y = LLWindow.m_y + height;
 
-   const double width = (windowRect.right - windowRect.left);
-   const double height = (windowRect.bottom - windowRect.top);
+	ShowWindow(hWnd, 1);
+	UpdateWindow(hWnd);
 
-   LLWindow.m_x = 0 - (width / 2);
-   LLWindow.m_y = 0 - (height / 2);
-   URWindow.m_x = LLWindow.m_x + width;
-   URWindow.m_y = LLWindow.m_y + height;
+	while(GetMessage(&msg, NULL, 0, 0))
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
 
-   ShowWindow(hWnd, 1);
-   UpdateWindow(hWnd);
-
-   while(GetMessage(&msg, NULL, 0, 0))
-   {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
-   }
-   
-   GdiplusShutdown(gdiplusToken);
-   return msg.wParam;
+	GdiplusShutdown(gdiplusToken);
+	return msg.wParam;
 }
 
 
@@ -402,7 +395,6 @@ void zoomOut()
 	URWindow.m_y = LLWindow.m_y + height;
 
 }
-
 
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
@@ -534,6 +526,61 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			::InvalidateRect(hWnd, NULL, TRUE);
 			break;
 		}
+	case WM_KEYDOWN:
+      switch (wParam)
+      {
+        case VK_HOME:
+          // Insert code here to process the HOME key
+          // ...
+          break;
+
+        case VK_END:
+          // Insert code here to process the END key
+          // ...
+          break;
+
+        case VK_INSERT:
+          // Insert code here to process the INS key
+          // ...
+          break;
+
+        case VK_F2:
+          // Insert code here to process the F2 key
+          // ...
+          break;
+
+        case VK_LEFT:
+          // Insert code here to process the LEFT ARROW key
+          // ...
+          break;
+
+        case VK_RIGHT:
+          // Insert code here to process the RIGHT ARROW key
+          // ...
+          break;
+
+        case VK_UP:
+          // Insert code here to process the UP ARROW key
+			zoomIn();
+			::InvalidateRect(hWnd, NULL, TRUE);
+          break;
+
+        case VK_DOWN:
+          // Insert code here to process the DOWN ARROW key
+			zoomOut();
+			::InvalidateRect(hWnd, NULL, TRUE);
+          break;
+
+        case VK_DELETE:
+          // Insert code here to process the DELETE key
+          // ...
+          break;
+        
+        default:
+          // Insert code here to process other noncharacter keystrokes
+          // ...
+          break;
+      } 
 	default:
 
 	    if( message == uMSH_MOUSEWHEEL )

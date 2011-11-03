@@ -2,17 +2,19 @@
 //
 
 #include "stdafx.h"
+#include "zmouse.h"
 #include <windows.h>
 #include <objidl.h>
 #include <gdiplus.h>
-#include "Strip.h"
-#include "Point.h"
 #include <sstream>
 #include <string>
+#include <fstream>
 
 #include "final_project.h"
 
-#include "zmouse.h"
+#include "Strip.h"
+#include "Point.h"
+#include "Polyline.h"
 
 //
 // Mouse Wheel rotation stuff, only define if we are
@@ -23,6 +25,8 @@
 #define WM_MOUSEWHEEL WM_MOUSELAST+1 
     // Message ID for IntelliMouse wheel
 #endif
+
+UINT uMSH_MOUSEWHEEL = 0;
 
 using namespace Gdiplus;
 #pragma comment (lib,"Gdiplus.lib")
@@ -48,8 +52,18 @@ INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 /*--------------------------------------------------------------
  * Configuration
  *--------------------------------------------------------------*/
-unsigned int SCREENSIZE_X = 800;
-unsigned int SCREENSIZE_Y = 480;
+
+// Small screen configuration:
+//unsigned int SCREENSIZE_X = 800;
+//unsigned int SCREENSIZE_Y = 480;
+
+// Large screen configuration:
+//unsigned int SCREENSIZE_X = 1440;
+//unsigned int SCREENSIZE_Y = 720;
+
+// Auto screen configuration
+unsigned int SCREENSIZE_X = CW_USEDEFAULT;
+unsigned int SCREENSIZE_Y = CW_USEDEFAULT;
 
 
 
@@ -57,9 +71,10 @@ unsigned int SCREENSIZE_Y = 480;
 
 
 
+dnl::Polyline inputPolyline("whatever");
 
 dnl::Point LLWindow = dnl::Point(0,0);
-dnl::Point URWindow = dnl::Point(100,100);
+dnl::Point URWindow = dnl::Point(SCREENSIZE_X,SCREENSIZE_Y);
 
 void DrawLine(HDC hdc, REAL x1, REAL y1, REAL x2, REAL y2)
 {
@@ -84,6 +99,8 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 	GetWindowInfo(hWnd, windowInfo);
 	RECT windowRect = windowInfo->rcWindow;
 
+	int winWidth = windowRect.right - windowRect.left;
+	int winHeight = windowRect.bottom - windowRect.top;
 	float winX = (float)windowRect.right - windowRect.left;
 	float winY = (float)windowRect.bottom - windowRect.top;
 	
@@ -134,10 +151,13 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 	double multX = winX / width;
 	double multY = winY / height;
 
-	PrintManager printMan(LLWindow, URWindow, multX, multY, &hdc);
+	PrintManager printMan(LLWindow, URWindow, multX, multY, winWidth, winHeight, &hdc);
 
-	Strip myStrip(dnl::Point(10, 10), dnl::Point(200, 200), 50, 80);
-	myStrip.print(printMan);
+	inputPolyline.print(printMan);
+	inputPolyline.printPolygon(printMan);
+
+	//Strip myStrip(dnl::Point(10, 10), dnl::Point(200, 200), 50, 80);
+	//myStrip.print(printMan);
 
 	// Print Grid lines
 	printMan.PrintGridY(2000, -1000, 1000, -1000, 1000);
@@ -158,7 +178,6 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 	printMan.PrintLine(dnl::Point(1000,-500), dnl::Point(-1000,500));
 	printMan.PrintLine(dnl::Point(1000,0), dnl::Point(-1000,0));
 	printMan.PrintLine(dnl::Point(1000,500), dnl::Point(-1000,-500));
-
 
 	// Draw origin
 	/*dnl::Point originPointLL(originX - 40, originY - 40);
@@ -213,7 +232,40 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 	}*/
 }
 
-UINT uMSH_MOUSEWHEEL = 0;
+void getLines(std::ifstream &stream, std::vector<std::string> & lines)
+{
+	std::string line;
+	while (std::getline(stream, line))
+	{
+   		lines.push_back(line);	
+	}
+	assert(lines.size() > 0);
+}
+
+void getInput(dnl::Polyline & output)
+{
+	// Read lines into memory
+	std::vector<std::string> lines;
+	std::ifstream myFileStream("A4.txt");
+	getLines(myFileStream, lines);
+
+	// Parse lines
+	for(unsigned int i = 0; i < lines.size(); i++)
+	{
+		std::stringstream lineStream(lines[i]);
+		
+		int index;
+		int xVal;
+		int yVal;
+
+		lineStream >> index >> xVal >> yVal;
+
+		output.addPoint(dnl::Point(xVal, yVal));
+	}
+
+	// close polygon
+	output.addPoint(output.m_points[0]);
+}
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
@@ -222,6 +274,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
+
+	// Get input
+
+	getInput(inputPolyline);
 
 	HACCEL				hAccelTable;
 	HWND                hWnd;
@@ -266,8 +322,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		WS_OVERLAPPEDWINDOW,      // window style
 		CW_USEDEFAULT,            // initial x position
 		CW_USEDEFAULT,            // initial y position
-		SCREENSIZE_X/*CW_USEDEFAULT*/,            // initial x size
-		SCREENSIZE_Y/*CW_USEDEFAULT*/,            // initial y size
+		SCREENSIZE_X,            // initial x size
+		SCREENSIZE_Y,            // initial y size
 		NULL,                     // parent window handle
 		NULL,                     // window menu handle
 		hInstance,                // program instance handle

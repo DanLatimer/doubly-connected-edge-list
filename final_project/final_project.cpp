@@ -10,6 +10,8 @@
 #include <string>
 #include <fstream>
 
+using namespace std;
+
 #include "final_project.h"
 
 #include "Strip.h"
@@ -254,38 +256,6 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 	{
 		printMan.PrintLine(linesToPrint[i].first, linesToPrint[i].second);
 	}
-
-	// Test a strip
-	//Strip myStrip(dnl::Point(10, 10), dnl::Point(200, 200), 50, 80);
-	//myStrip.print(printMan);
-
-	// Print Grid lines
-	/*printMan.PrintGridY(2000, -1000, 1000, -1000, 1000);
-	printMan.PrintGridX(2000, -1000, 1000, -1000, 1000);
-	printMan.PrintGridY(500, -1000, 1000, -1000, 1000);
-	printMan.PrintGridX(500, -1000, 1000, -1000, 1000);
-	printMan.PrintGridY(125, -1000, 1000, -1000, 1000);
-	printMan.PrintGridX(125, -1000, 1000, -1000, 1000);
-	printMan.PrintGridY(31.25, -1000, 1000, -1000, 1000, &printMan.m_superSeeThroughBlue);
-	printMan.PrintGridX(31.25, -1000, 1000, -1000, 1000, &printMan.m_superSeeThroughBlue);
-	*/
-
-	// Print Starflake
-	/*printMan.PrintLine(dnl::Point(-1000,-1000), dnl::Point(1000,1000));
-	printMan.PrintLine(dnl::Point(-500,-1000), dnl::Point(500,1000));
-	printMan.PrintLine(dnl::Point(0,-1000), dnl::Point(0,1000));
-	printMan.PrintLine(dnl::Point(500,-1000), dnl::Point(-500,1000));
-	printMan.PrintLine(dnl::Point(1000,-1000), dnl::Point(-1000,1000));
-	printMan.PrintLine(dnl::Point(1000,-500), dnl::Point(-1000,500));
-	printMan.PrintLine(dnl::Point(1000,0), dnl::Point(-1000,0));
-	printMan.PrintLine(dnl::Point(1000,500), dnl::Point(-1000,-500));
-	*/
-
-	// Draw origin
-	/*dnl::Point originPointLL(originX - 40, originY - 40);
-	dnl::Point originPointUR(originX + 40, originY + 40);
-	Strip origin(originPointLL, originPointUR, 40, 40);
-	origin.print(printMan);*/
 }
 
 void getLines(std::ifstream &stream, std::vector<std::string> & lines)
@@ -330,6 +300,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
+
+	// Try rapidXML
+	GMLFile myGML;
+	myGML.parse("vermont_roads.gml");
+
+
+
 
 	// Get input
 

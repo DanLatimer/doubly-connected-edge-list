@@ -15,7 +15,9 @@
 #include "Strip.h"
 #include "Point.h"
 #include "Polyline.h"
-
+#include "Algorithms.h"
+#include "RunLengthCoding.h"
+#include "RasterImage.h"
 //
 // Mouse Wheel rotation stuff, only define if we are
 // on a version of the OS that does not support
@@ -65,16 +67,56 @@ INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 unsigned int SCREENSIZE_X = CW_USEDEFAULT;
 unsigned int SCREENSIZE_Y = CW_USEDEFAULT;
 
+// 1080p fullscreen
+//unsigned int SCREENSIZE_X = 1800;
+//unsigned int SCREENSIZE_Y = 1080;
+
+class Layer
+{
+public:
+	Layer(std::string name, int layerNumber, bool on) 
+		: layerNumber(layerNumber), name(name), on(on) { }
+	std::string name;
+	int layerNumber;
+	bool on;
+};
+
+std::vector<Layer> layers;
 
 
 
 
 
 
+
+
+std::auto_ptr<RasterImage> inputRasterized;
 dnl::Polyline inputPolyline("whatever");
+std::vector< std::vector<int> > my2DVector;
+std::vector< std::pair<dnl::Point, dnl::Point> > linesToPrint;
 
 dnl::Point LLWindow = dnl::Point(0,0);
 dnl::Point URWindow = dnl::Point(SCREENSIZE_X,SCREENSIZE_Y);
+
+dnl::Point screenToUniverse(HWND hWnd, dnl::Point screenPoint)
+{
+	PWINDOWINFO windowInfo = new WINDOWINFO;
+	GetWindowInfo(hWnd, windowInfo);
+	RECT windowRect = windowInfo->rcWindow;
+ 
+	double winX = (double)(windowRect.right - windowRect.left);
+	double winY = (double)(windowRect.bottom - windowRect.top);
+
+	double width = URWindow.m_x - LLWindow.m_x;
+	double height = URWindow.m_y - LLWindow.m_y;
+	double multX = winX / width;
+	double multY = winY / height;
+
+	dnl::Point returnPoint(
+		(screenPoint.m_x / multX) + LLWindow.m_x,
+		((screenPoint.m_y) / multY) + LLWindow.m_y);
+	return returnPoint;
+}
 
 void DrawLine(HDC hdc, REAL x1, REAL y1, REAL x2, REAL y2)
 {
@@ -119,7 +161,8 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 
 	std::wstringstream info;
 	info << "CONTROLS:" << std::endl;
-	info << "Left click to centre the screen on that location." << std::endl;
+	info << "Left click and drag to pull the screen." << std::endl;
+	info << "Right click to centre the screen on that location." << std::endl;
 	info << "UP key / Scroll up to zoom in." << std::endl;
 	info << "DOWN key / Scroll down to zoom out." << std::endl;
 #ifdef _DEBUG
@@ -129,6 +172,14 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 	info << "LLWindow = (" << LLWindow.m_x << ", " << LLWindow.m_y << ") " << std::endl;
 	info << "Centre = (" << (URWindow.m_x + LLWindow.m_x) / 2 << ", " << (URWindow.m_y + LLWindow.m_y) / 2 << ") " << std::endl;
 #endif
+	info << " " << std::endl;
+	for(unsigned int i = 0; i < layers.size(); i++)
+	{
+		info << "[";
+		info << ((layers[i].on) ? "ON" : "OFF");
+		info << "] ";
+		info << "Layer " << i+1 << ": " << layers[i].name.c_str() << std::endl;
+	}
 
 	for(int i = 0; true; i++)
 	{
@@ -153,14 +204,63 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 
 	PrintManager printMan(LLWindow, URWindow, multX, multY, winWidth, winHeight, &hdc);
 
-	inputPolyline.print(printMan);
-	inputPolyline.printPolygon(printMan);
+	// Assignment #4's vector representation
+	//inputPolyline.print(printMan);
+	//inputPolyline.printPolygon(printMan);
 
+	// Test raster data output.
+	//printMan.PrintRasterGrid(-500, -500, 500, 500, my2DVector, &printMan.m_seeThroughBlue);
+
+	for(unsigned int i = 0; i < layers.size(); i++)
+	{
+		if(layers[i].on == false)
+		{
+			continue;
+		}
+
+		switch(layers[i].layerNumber)
+		{
+		case 1:
+		{
+			if(inputRasterized.get() != NULL)
+			{
+				inputRasterized->printRasterImage(printMan, 1);
+			}
+			break;
+		}
+		case 2:
+		{
+			if(inputRasterized.get() != NULL)
+			{
+				inputRasterized->printRasterImage(printMan, 2);
+			}
+			break;
+		}
+		case 3:
+		{
+			if(inputRasterized.get() != NULL)
+			{
+				inputRasterized->printRasterImage(printMan, 3);
+			}
+			break;
+		}
+		default:
+			break;
+		}
+	}
+
+	// Debug point panning lines
+	for(unsigned int i = 0; i < linesToPrint.size(); i++)
+	{
+		printMan.PrintLine(linesToPrint[i].first, linesToPrint[i].second);
+	}
+
+	// Test a strip
 	//Strip myStrip(dnl::Point(10, 10), dnl::Point(200, 200), 50, 80);
 	//myStrip.print(printMan);
 
 	// Print Grid lines
-	printMan.PrintGridY(2000, -1000, 1000, -1000, 1000);
+	/*printMan.PrintGridY(2000, -1000, 1000, -1000, 1000);
 	printMan.PrintGridX(2000, -1000, 1000, -1000, 1000);
 	printMan.PrintGridY(500, -1000, 1000, -1000, 1000);
 	printMan.PrintGridX(500, -1000, 1000, -1000, 1000);
@@ -168,9 +268,10 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 	printMan.PrintGridX(125, -1000, 1000, -1000, 1000);
 	printMan.PrintGridY(31.25, -1000, 1000, -1000, 1000, &printMan.m_superSeeThroughBlue);
 	printMan.PrintGridX(31.25, -1000, 1000, -1000, 1000, &printMan.m_superSeeThroughBlue);
+	*/
 
 	// Print Starflake
-	printMan.PrintLine(dnl::Point(-1000,-1000), dnl::Point(1000,1000));
+	/*printMan.PrintLine(dnl::Point(-1000,-1000), dnl::Point(1000,1000));
 	printMan.PrintLine(dnl::Point(-500,-1000), dnl::Point(500,1000));
 	printMan.PrintLine(dnl::Point(0,-1000), dnl::Point(0,1000));
 	printMan.PrintLine(dnl::Point(500,-1000), dnl::Point(-500,1000));
@@ -178,58 +279,13 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 	printMan.PrintLine(dnl::Point(1000,-500), dnl::Point(-1000,500));
 	printMan.PrintLine(dnl::Point(1000,0), dnl::Point(-1000,0));
 	printMan.PrintLine(dnl::Point(1000,500), dnl::Point(-1000,-500));
+	*/
 
 	// Draw origin
 	/*dnl::Point originPointLL(originX - 40, originY - 40);
 	dnl::Point originPointUR(originX + 40, originY + 40);
 	Strip origin(originPointLL, originPointUR, 40, 40);
-	origin.print(printMan);
-
-	//DrawRectangle(hdc, 10, 10, 100, 50);
-
-	// Draw Arc
-	{
-		Pen pen(Color(255, 255, 0, 0));
-		GraphicsPath path;
-		path.AddArc(175, 50, 50, 50, 0, -180);
-		graphics.DrawPath(&pen, &path);
-	}
-
-	// Draw two figures
-	{
-		Point points[] = {Point(40, 60), Point(50, 70), Point(30, 90)};
-
-		Pen pen(Color(255, 255, 0, 0), 2);
-		GraphicsPath path;
-
-		// The first figure is started automatically, so there is
-		// no need to call StartFigure here.
-		path.AddArc(175, 50, 50, 50, 0.0f, -180.0f);
-		path.AddLine(100, 0, 250, 20);
-
-		path.StartFigure();
-		path.AddLine(50, 20, 5, 90);
-		path.AddCurve(points, 3);
-		path.AddLine(50, 150, 150, 180);
-		path.CloseFigure();
-
-		graphics.DrawPath(&pen, &path);
-	}
-
-	// Draw filled shapes
-	{
-		GraphicsPath path;
-		Pen          pen(Color(255, 255, 0, 0), 2);
-		SolidBrush   brush(Color(255, 0, 0, 200));
-
-		path.AddLine(10, 10, 100, 40);
-		path.AddLine(100, 60, 30, 60);
-		path.AddRectangle(Rect(50, 35, 20, 40));
-		path.AddEllipse(10, 75, 40, 30);
-
-		graphics.DrawPath(&pen, &path);
-		graphics.FillPath(&brush, &path);
-	}*/
+	origin.print(printMan);*/
 }
 
 void getLines(std::ifstream &stream, std::vector<std::string> & lines)
@@ -277,7 +333,41 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	// Get input
 
+	layers.push_back(Layer("Raster Boundary", 1, true));
+	layers.push_back(Layer("Raster Image", 2, false));
+	layers.push_back(Layer("Raster Polygon", 3, false));
+
 	getInput(inputPolyline);
+	inputRasterized.reset(new RasterImage(64,64, inputPolyline));
+	//inputRasterized.reset(new RasterImage(256,256, inputPolyline));
+
+	int testArray[10][10] = 
+	{
+		{0,0,0,0,0,0,0,0,0,0},
+		{0,1,1,1,1,1,1,0,0,0},
+		{0,1,0,0,0,0,0,1,0,0},
+		{0,1,0,1,0,0,0,0,1,0},
+		{0,1,0,1,0,0,0,0,1,0},
+		{0,1,0,1,0,0,0,0,1,0},
+		{0,1,0,1,1,1,0,0,1,0},
+		{0,1,0,0,0,0,0,1,0,0},
+		{0,1,1,1,1,1,1,0,0,0},
+		{0,0,0,0,0,0,0,0,0,0}
+	};
+
+	// convert and put into my2DVector
+	for(int i = 0; i < 10; i++)
+	{
+		std::vector<int> my1DVector;
+		for(int j = 0; j < 10; j++)
+		{
+			my1DVector.push_back(testArray[i][j]);
+		}
+		my2DVector.push_back(my1DVector);
+	}
+
+	RunLengthCoding rlc(my2DVector);
+	rlc.output();
 
 	HACCEL				hAccelTable;
 	HWND                hWnd;
@@ -312,13 +402,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	wndClass.hCursor        = LoadCursor(NULL, IDC_ARROW);
 	wndClass.hbrBackground  = (HBRUSH)GetStockObject(WHITE_BRUSH);
 	wndClass.lpszMenuName   = NULL;
-	wndClass.lpszClassName  = TEXT("CS6345 Final Project: Doubly Connected Edge List");
+	wndClass.lpszClassName  = TEXT("CS6345 Assignment #4: Merrill's Algorithm / Bresenham's Rasterization");
 
 	RegisterClass(&wndClass);
 
 	hWnd = CreateWindow(
-		TEXT("CS6345 Final Project: Doubly Connected Edge List"),   // window class name
-		TEXT("CS6345 Final Project: Doubly Connected Edge List"),  // window caption
+		TEXT("CS6345 Assignment #4: Merrill's Algorithm / Bresenham's Rasterization"),   // window class name
+		TEXT("CS6345 Assignment #4: Merrill's Algorithm / Bresenham's Rasterization"),  // window caption
 		WS_OVERLAPPEDWINDOW,      // window style
 		CW_USEDEFAULT,            // initial x position
 		CW_USEDEFAULT,            // initial y position
@@ -420,7 +510,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
-
 const double zoomFactor = 2;
 
 void zoomIn()
@@ -451,6 +540,9 @@ void zoomOut()
 	URWindow.m_y = LLWindow.m_y + height;
 
 }
+
+bool mouseDown = false;
+dnl::Point mouseDownPoint;
 
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
@@ -496,6 +588,45 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		PostQuitMessage(0);
 		break;
 	case WM_LBUTTONUP:
+		{
+			ptsCursor = MAKEPOINTS(lParam); 
+			ptsCursor.x;
+			ptsCursor.y;
+
+			// TODO: Handle the PAN operation
+			mouseDownPoint.m_x;
+			mouseDownPoint.m_y;
+
+			// for now just print a line from where we pressed
+			// down the mouse to where we let it up.
+
+			dnl::Point begin = screenToUniverse(hWnd, mouseDownPoint);
+			dnl::Point end = screenToUniverse(hWnd, dnl::Point(ptsCursor.x, ptsCursor.y));
+			//linesToPrint.push_back( std::pair<dnl::Point, dnl::Point>(begin, end)); 
+
+			const double xChange = end.m_x - begin.m_x;
+			const double yChange = end.m_y - begin.m_y;
+			LLWindow.m_x -= xChange;
+			URWindow.m_x -= xChange;
+			LLWindow.m_y -= yChange;
+			URWindow.m_y -= yChange;
+
+			mouseDown = false;
+			::InvalidateRect(hWnd, NULL, TRUE);
+			break;
+		}
+	case WM_LBUTTONDOWN:
+		{
+			ptsCursor = MAKEPOINTS(lParam); 
+			ptsCursor.x;
+			ptsCursor.y;
+
+			mouseDown = true;
+			mouseDownPoint.m_x = ptsCursor.x;
+			mouseDownPoint.m_y = ptsCursor.y;
+			break;
+		}
+	case WM_RBUTTONUP:
 		{	
 			PWINDOWINFO windowInfo = new WINDOWINFO;
 			GetWindowInfo(hWnd, windowInfo);
@@ -525,61 +656,37 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			break;
 		}
 	case WM_LBUTTONDBLCLK:
-		{
-			// For more information see
-			// http://msdn.microsoft.com/en-us/library/ms645602%28v=VS.85%29.aspx#processing_dblclick
-			/*ptsCursor = MAKEPOINTS(lParam); 
-
-			double width = URWindow.m_x - LLWindow.m_x;
-			double height = URWindow.m_y - LLWindow.m_y;
-
-			width *= 1.5;
-			height *= 1.5;
-
-			LLWindow.m_x = LLWindow.m_x - (width / 4);
-			URWindow.m_x = URWindow.m_x + (width / 4);
-
-			LLWindow.m_y = LLWindow.m_y - (height / 4);
-			URWindow.m_y = URWindow.m_y + (height / 4);*/
-
-			/*LLWindow.m_x = ptsCursor.x - (width / 2);
-			LLWindow.m_y = ptsCursor.y - (height / 2);
-
-			URWindow.m_x = LLWindow.m_x + width;
-			URWindow.m_y = LLWindow.m_y + height;*/
-
-			::InvalidateRect(hWnd, NULL, TRUE);
+		{	
 			break;
 		}
 	case WM_RBUTTONDBLCLK:
 		{
-			/*ptsCursor = MAKEPOINTS(lParam);
-			
-			double width = URWindow.m_x - LLWindow.m_x;
-			double height = URWindow.m_y - LLWindow.m_y;
-
-			width /= 1.5;
-			height /= 1.5;
-
-			LLWindow.m_x = LLWindow.m_x + (width / 4);
-			URWindow.m_x = URWindow.m_x - (width / 4);
-
-			LLWindow.m_y = LLWindow.m_y + (height / 4);
-			URWindow.m_y = URWindow.m_y - (height / 4);*/
-
-			/*LLWindow.m_x = ptsCursor.x - (width / 2);
-			LLWindow.m_y = ptsCursor.y - (height / 2);
-
-			URWindow.m_x = LLWindow.m_x + width;
-			URWindow.m_y = LLWindow.m_y + height;*/
-
-			::InvalidateRect(hWnd, NULL, TRUE);
 			break;
 		}
         case WM_MOUSEWHEEL:
 		{
 			((short) HIWORD(wParam)< 0) ? zoomOut() : zoomIn();
 			::InvalidateRect(hWnd, NULL, TRUE);
+			break;
+		}
+	case WM_CHAR: 
+	  // Process "displayable" characters
+		{
+			int ch = (TCHAR) wParam; 
+			
+			const int layerNumber = ch - '0';
+			
+			if(layerNumber > 9 || layerNumber < 1)
+			{
+				break;
+			}
+
+			if(layerNumber < layers.size() + 1)
+			{
+				layers[layerNumber-1].on = !layers[layerNumber-1].on;
+				::InvalidateRect(hWnd, NULL, TRUE);
+			}
+
 			break;
 		}
 	case WM_KEYDOWN:
@@ -631,7 +738,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
           // Insert code here to process the DELETE key
           // ...
           break;
-        
         default:
           // Insert code here to process other noncharacter keystrokes
           // ...

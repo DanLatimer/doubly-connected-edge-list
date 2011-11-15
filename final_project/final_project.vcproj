@@ -173,6 +173,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\Algorithms.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\final_project.cpp"
 				>
 			</File>
@@ -186,6 +190,14 @@
 			</File>
 			<File
 				RelativePath=".\PrintManager.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RasterImage.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RunLengthCoding.cpp"
 				>
 			</File>
 			<File
@@ -227,6 +239,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\Algorithms.h"
+				>
+			</File>
+			<File
 				RelativePath=".\common.h"
 				>
 			</File>
@@ -247,7 +263,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RasterImage.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Resource.h"
+				>
+			</File>
+			<File
+				RelativePath=".\RunLengthCoding.h"
 				>
 			</File>
 			<File

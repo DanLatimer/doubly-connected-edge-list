@@ -3,7 +3,13 @@
 
 #include "common.h"
 #include "Point.h"
+#include "RunLengthCoding.h"
 #include <vector>
+
+// Forward declarations
+namespace Gdiplus{
+class Graphics;
+}
 
 class Colour
 {
@@ -28,10 +34,29 @@ public:
 		const int screenHeight,
 		HDC *hdc);
 
-	// Print methods
-	void PrintLine(dnl::Point begin, dnl::Point end, Colour *colour = NULL);
+	// Print Primitives
+	void PrintPoint(const dnl::Point &point, Colour *colour = NULL);
+	void FillPoint(const dnl::Point &point, Colour *colour = NULL);
+	void PrintLine(dnl::Point begin, dnl::Point end, Colour *colour = NULL, float width = 1);
 	void PrintArrow(dnl::Point begin, dnl::Point end);
+	void PrintText(const dnl::Point begin, const std::string &text, int size = 27, Colour *colour = NULL);
+
+	// Print Complex Structures
 	void PrintPolygon(const std::vector<dnl::Point> &points, Colour *colour = NULL);
+	void PrintRasterGrid(
+		const double minX, 
+		const double minY, 
+		const double maxX, 
+		const double maxY, 
+		const std::vector< std::vector<int> > &my2DVector,
+		Colour *colour = NULL);
+	void PrintRunLengthCoding(
+		const double minX, 
+		const double minY, 
+		const double maxX, 
+		const double maxY, 
+		const RunLengthCoding &runLengthCoding,
+		Colour *colour = NULL);
 	void PrintGridX(
 		const double width,  
 		const double minX, 
@@ -51,9 +76,13 @@ public:
 private:
 	float transformX(const double xValue);
 	float transformY(const double yValue);
+	int transformWidth(const int width);
+	int transformHeight(const int height);
+	int transformTextSize(const int size);
 
 	// Data members
 	HDC *m_hdc;
+	std::auto_ptr<Gdiplus::Graphics> m_graphics;
 	dnl::Point m_LLWindow;
 	dnl::Point m_URWindow;
 	double m_multX;
@@ -62,10 +91,13 @@ private:
 	int m_screenHeight;
 
 public:
+	Colour m_solidBlack;
+	Colour m_solidWhite;
+	Colour m_solidRed;
+	Colour m_solidGreen;
 	Colour m_solidBlue;
 	Colour m_seeThroughBlue;
 	Colour m_superSeeThroughBlue;
-	Colour m_solidGreen;
 	Colour m_seethroughGreen;
 };
 

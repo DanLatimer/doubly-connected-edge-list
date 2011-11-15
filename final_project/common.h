@@ -11,6 +11,10 @@
 */
 #include <string>
 #include <iostream>
+#include <vector>
+#include <utility>
+#include <memory>
+
 #include "assert.h"
 static void ReportError(std::string errorMsg)
 {

@@ -34,6 +34,8 @@ public:
 		const int screenHeight,
 		HDC *hdc);
 
+	bool m_LLDG;
+
 	// Print Primitives
 	void PrintPoint(const dnl::Point &point, Colour *colour = NULL);
 	void FillPoint(const dnl::Point &point, Colour *colour = NULL);

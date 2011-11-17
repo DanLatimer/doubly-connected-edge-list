@@ -30,7 +30,8 @@ PrintManager::PrintManager(
 	const int screenWidth,
 	const int screenHeight,
 	HDC *hdc)
-	: m_LLWindow(LLWindow),
+	: m_LLDG(false),
+	m_LLWindow(LLWindow),
 	m_URWindow(URWindow),
 	m_multX(multX),
 	m_multY(multY),
@@ -58,7 +59,14 @@ float PrintManager::transformX(const double xValue)
 
 float PrintManager::transformY(const double yValue)
 {
-	return (float)((yValue - m_LLWindow.m_y) * m_multY);
+	if(!m_LLDG)
+	{
+		return (float)((yValue - m_LLWindow.m_y) * m_multY);
+	}
+	else
+	{
+		return (float)((m_LLWindow.m_y - yValue) * m_multY);
+	}
 }
 
 int PrintManager::transformWidth(const int width)

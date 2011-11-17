@@ -3,8 +3,10 @@
 #include "utils.h"
 #include "Point.h"
 #include "math.h"
+#include <sstream>
 
 using namespace dnl;
+using namespace std;
 
 double utils::getSignedDistanceOfPointFromLine(const Point & begin, const Point & end, const Point & point)
 {
@@ -38,4 +40,58 @@ bool utils::pointToRightOfLine(const Point & begin, const Point & end, const Poi
 {
 	double signedDistance = getSignedDistanceOfPointFromLine(begin, end, point);
 	return signedDistance < 0;
+}
+
+double utils::parseDouble(const std::string &data)
+{
+	std::stringstream stream(data);
+	double retVal;
+	stream >> retVal;
+	return retVal;
+}
+
+void utils::expandBoundingBox(dnl::Point &llBox, dnl::Point &urBox, const dnl::Point &llCurrent, const dnl::Point &urCurrent)
+{
+	if(llCurrent.m_x < llBox.m_x)
+	{
+		llBox.m_x = llCurrent.m_x;
+	}
+
+	if(llCurrent.m_y < llBox.m_y)
+	{
+		llBox.m_y = llCurrent.m_y;
+	}
+
+	if(urCurrent.m_x > urBox.m_x)
+	{
+		urBox.m_x = urCurrent.m_x;
+	}
+
+	if(urCurrent.m_y > urBox.m_y)
+	{
+		urBox.m_y = urCurrent.m_y;
+	}
+}
+
+void utils::expandBoundingBox(dnl::Point &llBox, dnl::Point &urBox, const dnl::Point &current)
+{
+	if(current.m_x < llBox.m_x)
+	{
+		llBox.m_x = current.m_x;
+	}
+
+	if(current.m_y < llBox.m_y)
+	{
+		llBox.m_y = current.m_y;
+	}
+
+	if(current.m_x > urBox.m_x)
+	{
+		urBox.m_x = current.m_x;
+	}
+
+	if(current.m_y > urBox.m_y)
+	{
+		urBox.m_y = current.m_y;
+	}
 }

@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;H:\My School Library\CS6345 - Spatial Data Structures\final_project\rapidxml-1.13&quot;"
+				AdditionalIncludeDirectories="&quot;..\rapidxml-1.13&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -86,7 +86,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy &quot;$(SolutionDir)A4.txt&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)vermont_roads.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;"
+				CommandLine="copy &quot;$(SolutionDir)A4.txt&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)vermont_roads.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)test.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)newhampshire_areawater.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)northamerican_hydrography.gml&quot; &quot;$(InputDir)&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -161,7 +161,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy &quot;$(SolutionDir)A4.txt&quot; &quot;$(InputDir)&quot;"
+				CommandLine="copy &quot;$(SolutionDir)A4.txt&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)vermont_roads.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)test.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)newhampshire_areawater.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)northamerican_hydrography.gml&quot; &quot;$(InputDir)&quot;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -187,6 +187,10 @@
 			</File>
 			<File
 				RelativePath=".\Point.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Polygon.cpp"
 				>
 			</File>
 			<File
@@ -261,6 +265,10 @@
 			</File>
 			<File
 				RelativePath=".\Point.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Polygon.h"
 				>
 			</File>
 			<File

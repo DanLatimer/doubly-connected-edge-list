@@ -20,6 +20,8 @@ using namespace std;
 #include "Algorithms.h"
 #include "RunLengthCoding.h"
 #include "RasterImage.h"
+#include "GMLFile.h"
+
 //
 // Mouse Wheel rotation stuff, only define if we are
 // on a version of the OS that does not support
@@ -90,7 +92,7 @@ std::vector<Layer> layers;
 
 
 
-
+GMLFile myGMLFile;
 
 std::auto_ptr<RasterImage> inputRasterized;
 dnl::Polyline inputPolyline("whatever");
@@ -246,6 +248,11 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 			}
 			break;
 		}
+		case 4:
+		{
+			myGMLFile.print(printMan);
+			break;
+		}
 		default:
 			break;
 		}
@@ -302,18 +309,20 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
 	// Try rapidXML
-	GMLFile myGML;
-	myGML.parse("vermont_roads.gml");
+	string filename("newhampshire_areawater.gml");
+	//string filename("vermont_roads.gml");
+	bool success = myGMLFile.parse(filename);
+	if(!success)
+	{
+		ReportError("Unable to open GML file: " + filename);
+	}
 
-
-
-
-	// Get input
-
-	layers.push_back(Layer("Raster Boundary", 1, true));
+	layers.push_back(Layer("Raster Boundary", 1, false));
 	layers.push_back(Layer("Raster Image", 2, false));
 	layers.push_back(Layer("Raster Polygon", 3, false));
+	layers.push_back(Layer("GMLFile: " + filename, 4, true));
 
+	// Get input
 	getInput(inputPolyline);
 	inputRasterized.reset(new RasterImage(64,64, inputPolyline));
 	//inputRasterized.reset(new RasterImage(256,256, inputPolyline));
@@ -403,10 +412,49 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	const double width = (windowRect.right - windowRect.left);
 	const double height = (windowRect.bottom - windowRect.top);
 
-	LLWindow.m_x = 0 - (width / 2);
-	LLWindow.m_y = 0 - (height / 2);
-	URWindow.m_x = LLWindow.m_x + width;
-	URWindow.m_y = LLWindow.m_y + height;
+	//LLWindow.m_x = 0 - (width / 2);
+	//LLWindow.m_y = 0 - (height / 2);
+	//URWindow.m_x = LLWindow.m_x + width;
+	//URWindow.m_y = LLWindow.m_y + height;
+
+	// Centre window on GML file boundaries
+	{
+		const double aspectRatio = width/height;
+		double dataHeight = myGMLFile.m_urY - myGMLFile.m_llY;
+		double dataWidth = myGMLFile.m_urX - myGMLFile.m_llX;
+
+		if(aspectRatio > 1)
+		{
+			// width dominates aspect ratio
+			dataHeight = myGMLFile.m_urY - myGMLFile.m_llY;
+			dataWidth = dataHeight * aspectRatio;
+			
+			LLWindow.m_x = myGMLFile.m_llX;
+			LLWindow.m_y = myGMLFile.m_llY + dataHeight;
+			
+			URWindow.m_x = LLWindow.m_x + dataWidth;
+			URWindow.m_y = LLWindow.m_y - dataHeight;
+		}
+		else
+		{
+			// height dominates aspect ratio
+			dataWidth = myGMLFile.m_urX - myGMLFile.m_llX;
+			dataHeight = dataWidth * aspectRatio;
+
+			LLWindow.m_x = myGMLFile.m_llX;
+			LLWindow.m_y = myGMLFile.m_llY + dataHeight;
+			
+			URWindow.m_x = LLWindow.m_x + dataWidth;
+			URWindow.m_y = LLWindow.m_y - dataHeight;
+		}
+
+		// Centre the two boxes
+
+		// Find the centriods
+		double dataCentreX = LLWindow.m_x + dataWidth / 2;
+		double dataCentreY = LLWindow.m_y + dataHeight / 2;
+
+	}
 
 	ShowWindow(hWnd, 1);
 	UpdateWindow(hWnd);

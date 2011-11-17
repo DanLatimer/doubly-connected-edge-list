@@ -19,7 +19,9 @@
 static void ReportError(std::string errorMsg)
 {
 	std::cout << "Epic Fail: " << errorMsg << std::endl;
-	assert(0);
+	#ifdef _DEBUG
+		assert(0);
+	#endif
 }
 
 

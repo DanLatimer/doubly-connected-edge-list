@@ -1,6 +1,0 @@
-Line 505 - Boundaries start
-505 - SW boundary
-507 - NW boundary
-509 - NE boundary
-511 - SE boundary
-

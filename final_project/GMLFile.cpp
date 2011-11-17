@@ -218,7 +218,7 @@ bool GMLFile::parseFeature(xml_node<> *currentFeature)
 		featureContents->first_attribute(ATTRIBUTE_fid.c_str(), ATTRIBUTE_fid.size());
 	if(fidAttribute != NULL)
 	{
-		fid = fidAttribute->value();
+		fid = fidAttribute->value(); 
 	}
 
 	string featureName("unnamed feature");

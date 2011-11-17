@@ -86,7 +86,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy &quot;$(SolutionDir)A4.txt&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)vermont_roads.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)test.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)newhampshire_areawater.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)northamerican_hydrography.gml&quot; &quot;$(InputDir)&quot;"
+				CommandLine="copy &quot;$(SolutionDir)A4.txt&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)vermont_roads.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)test.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)newhampshire_areawater.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)northamerican_hydrography.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)northAmericanRoadsGML1.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)northAmericanHydroGML1.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -116,6 +116,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="&quot;..\rapidxml-1.13&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -161,7 +162,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy &quot;$(SolutionDir)A4.txt&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)vermont_roads.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)test.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)newhampshire_areawater.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)northamerican_hydrography.gml&quot; &quot;$(InputDir)&quot;"
+				CommandLine="copy &quot;$(SolutionDir)A4.txt&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)vermont_roads.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)test.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)newhampshire_areawater.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)northamerican_hydrography.gml&quot; &quot;$(InputDir)&quot;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>

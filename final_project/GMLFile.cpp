@@ -220,12 +220,19 @@ bool GMLFile::parseFeature(xml_node<> *currentFeature)
 	{
 		fid = fidAttribute->value();
 	}
+
+	string featureName("unnamed feature");
+	xml_node<> *fullName = featureContents->first_node(TAG_Fullname.c_str());
+	if(fullName != NULL)
+	{
+		featureName = fullName->value();
+	}
 	
 	xml_node<> *geometryProperty = featureContents->first_node(TAG_GeometryProperty.c_str());
 	if(geometryProperty == NULL)
 	{
 		ReportError("Feature Member must have a geometry (ogr:geometryProperty) tag.");
-		return false;
+		return false; 
 	}
 	
 	xml_node<> *geometry = geometryProperty->first_node();
@@ -233,13 +240,6 @@ bool GMLFile::parseFeature(xml_node<> *currentFeature)
 	{
 		ReportError("ogr:geometryProperty must contain at least one node.");
 		return false;
-	}
-
-	string featureName("unnamed feature");
-	xml_node<> *fullName = featureContents->first_node(TAG_Fullname.c_str());
-	if(fullName != NULL)
-	{
-		featureName = fullName->value();
 	}
 
 	string geometryTagName = geometry->name();
@@ -346,7 +346,7 @@ bool GMLFile::parseFeatures(xml_node<> *allFeatures)
 		if(!success)
 		{
 			ReportError("Did not successfully parseFeature(currentFeature)");
-			return false;
+			//return false;
 		}
 
 		currentFeature = currentFeature->next_sibling(TAG_FeatureMember.c_str());

@@ -93,6 +93,7 @@ std::vector<Layer> layers;
 
 
 GMLFile myGMLFile;
+GMLFile myGMLFile2;
 
 std::auto_ptr<RasterImage> inputRasterized;
 dnl::Polyline inputPolyline("whatever");
@@ -253,6 +254,11 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 			myGMLFile.print(printMan);
 			break;
 		}
+		case 5:
+		{
+			myGMLFile2.print(printMan);
+			break;
+		}
 		default:
 			break;
 		}
@@ -309,18 +315,27 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
 	// Try rapidXML
-	string filename("newhampshire_areawater.gml");
+	string filename("northAmericanRoadsGML1.gml");
+	//string filename("newhampshire_areawater.gml");
 	//string filename("vermont_roads.gml");
 	bool success = myGMLFile.parse(filename);
 	if(!success)
 	{
-		ReportError("Unable to open GML file: " + filename);
+		ReportError("Unable to parse GML file: " + filename);
+	}
+
+	string filename2("northAmericanHydroGML1.gml");
+	success = myGMLFile2.parse(filename2);
+	if(!success)
+	{
+		ReportError("Unable to parse GML file: " + filename2);
 	}
 
 	layers.push_back(Layer("Raster Boundary", 1, false));
 	layers.push_back(Layer("Raster Image", 2, false));
 	layers.push_back(Layer("Raster Polygon", 3, false));
 	layers.push_back(Layer("GMLFile: " + filename, 4, true));
+	layers.push_back(Layer("GMLFile: " + filename2, 5, true));
 
 	// Get input
 	getInput(inputPolyline);
@@ -388,13 +403,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	wndClass.hCursor        = LoadCursor(NULL, IDC_ARROW);
 	wndClass.hbrBackground  = (HBRUSH)GetStockObject(WHITE_BRUSH);
 	wndClass.lpszMenuName   = NULL;
-	wndClass.lpszClassName  = TEXT("CS6345 Assignment #4: Merrill's Algorithm / Bresenham's Rasterization");
+	wndClass.lpszClassName  = TEXT("CS6345 Final Project: Doubly Connected Edge List");
 
 	RegisterClass(&wndClass);
 
 	hWnd = CreateWindow(
-		TEXT("CS6345 Assignment #4: Merrill's Algorithm / Bresenham's Rasterization"),   // window class name
-		TEXT("CS6345 Assignment #4: Merrill's Algorithm / Bresenham's Rasterization"),  // window caption
+		TEXT("CS6345 Final Project: Doubly Connected Edge List"),   // window class name
+		TEXT("CS6345 Final Project: Doubly Connected Edge List"),  // window caption
 		WS_OVERLAPPEDWINDOW,      // window style
 		CW_USEDEFAULT,            // initial x position
 		CW_USEDEFAULT,            // initial y position

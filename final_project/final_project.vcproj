@@ -179,6 +179,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DoublyConnectedEdgeList.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\final_project.cpp"
 				>
 			</File>
@@ -254,6 +258,10 @@
 			</File>
 			<File
 				RelativePath=".\common.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DoublyConnectedEdgeList.h"
 				>
 			</File>
 			<File

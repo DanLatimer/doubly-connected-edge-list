@@ -31,6 +31,7 @@ private:
 	// Data
 	rapidxml::xml_document<> m_doc;
 
+public:
 	std::vector<dnl::Polyline> m_lines;
 	std::vector<dnl::Polygon> m_areas;
 };

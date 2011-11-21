@@ -21,6 +21,7 @@ using namespace std;
 #include "RunLengthCoding.h"
 #include "RasterImage.h"
 #include "GMLFile.h"
+#include "VertexEdgeMap.h"
 
 //
 // Mouse Wheel rotation stuff, only define if we are
@@ -94,6 +95,8 @@ std::vector<Layer> layers;
 
 GMLFile myGMLFile;
 GMLFile myGMLFile2;
+VertexEdgeMap edgeMap1;
+VertexEdgeMap edgeMap2;
 
 std::auto_ptr<RasterImage> inputRasterized;
 dnl::Polyline inputPolyline("whatever");
@@ -259,6 +262,16 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 			myGMLFile2.print(printMan);
 			break;
 		}
+		case 6:
+		{
+			edgeMap1.print(printMan);
+			break;
+		}
+		case 7:
+		{
+			edgeMap2.print(printMan);
+			break;
+		}
 		default:
 			break;
 		}
@@ -324,18 +337,32 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		ReportError("Unable to parse GML file: " + filename);
 	}
 
+	success = edgeMap1.construct(&myGMLFile);
+	if(!success)
+	{
+		ReportError("Unable to create edgeMap: " + filename);
+	}
+
 	string filename2("northAmericanHydroGML1.gml");
-	success = myGMLFile2.parse(filename2);
+	/*success = myGMLFile2.parse(filename2);
 	if(!success)
 	{
 		ReportError("Unable to parse GML file: " + filename2);
 	}
 
+	success = edgeMap2.construct(&myGMLFile2);
+	if(!success)
+	{
+		ReportError("Unable to create edgeMap: " + filename2);
+	}*/
+
 	layers.push_back(Layer("Raster Boundary", 1, false));
 	layers.push_back(Layer("Raster Image", 2, false));
 	layers.push_back(Layer("Raster Polygon", 3, false));
-	layers.push_back(Layer("GMLFile: " + filename, 4, true));
-	layers.push_back(Layer("GMLFile: " + filename2, 5, true));
+	layers.push_back(Layer("GMLFile: " + filename, 4, false));
+	//layers.push_back(Layer("GMLFile: " + filename2, 5, false));
+	layers.push_back(Layer("EdgeMap: " + filename, 6, true));
+	//layers.push_back(Layer("EdgeMap: " + filename2, 7, true));
 
 	// Get input
 	getInput(inputPolyline);

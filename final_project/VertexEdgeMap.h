@@ -18,8 +18,14 @@ private:
 	{
 	   bool operator()(const dnl::Point &a, const dnl::Point &b) const
 	   {
-		   // NOT a good solution
-		   return (a.m_x + a.m_y) < (b.m_x + b.m_y);
+			if(a.m_x == b.m_x)
+			{
+				return a.m_y < b.m_y;
+			}
+			else
+			{
+				return a.m_x < b.m_x;
+			}
 	   }
 	};
 

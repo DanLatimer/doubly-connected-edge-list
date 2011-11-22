@@ -43,12 +43,15 @@ public:
 private:
 	void addEdgesForVertex(const VertexEdgeMap &vertexEdgeMap, const unsigned int vertexIndex);
 	bool constructVertexCycles();
+	bool constructFaceCycles();
+	void findEdgesOfFace(int faceIndex, std::vector<int> &edges);
 
 	// Data
 	std::vector<dnl::Point> m_VERTEX;
 	
 	std::vector<Edge> m_edges;
 	std::vector<int> m_firstOccuranceOfVertex;
+	std::vector<int> m_firstOccuranceOfFace;
 
 	std::vector<int> m_edgeCycleVertexIndex;
 	std::vector<EdgeCycleEntry> m_edgeCycles;

@@ -56,8 +56,16 @@ bool VertexEdgeMap::construct(GMLFile *gmlFile)
 				continue;
 			}
 
-			const std::pair<int, int> edge(previousVertexIndex, vertexIndex);
-			m_edges.insert(edge);
+			// Add more vectors as needed.
+			for(unsigned int i = m_edges.size(); i <= vertexIndex || i <= previousVertexIndex; i++)
+			{
+				std::vector<int> oneDVector;
+				m_edges.push_back(oneDVector);
+			}
+
+			m_edges[previousVertexIndex].push_back(vertexIndex);
+			m_edges[vertexIndex].push_back(previousVertexIndex);
+
 			previousVertexIndex = vertexIndex;
 		}
 	}
@@ -66,13 +74,21 @@ bool VertexEdgeMap::construct(GMLFile *gmlFile)
 
 void VertexEdgeMap::print(PrintManager &printMan)
 {
-	std::map<int, int>::iterator currentEdge = m_edges.begin();
-	for(; currentEdge != m_edges.end(); currentEdge++)
+	for(unsigned int i = 0; i < m_verticies.size(); i++)
 	{
-		// Get the two points the edge is made of
-		const dnl::Point &point1 = m_verticies[currentEdge->first];
-		const dnl::Point &point2 = m_verticies[currentEdge->second];
+		const dnl::Point &point1 = m_verticies[i];
+		for(unsigned int j = 0; j < m_edges[i].size(); j++)
+		{
+			if(i > m_edges[i][j])
+			{
+				// We've already printed this edge
+				continue;
+			}
 
-		printMan.PrintLine(point1, point2);
+			// Get the two points the edge is made of
+			const dnl::Point &point2 = m_verticies[m_edges[i][j]];
+
+			printMan.PrintLine(point1, point2);
+		}
 	}
 }

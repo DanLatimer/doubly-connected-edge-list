@@ -2,10 +2,18 @@
 #pragma once
 
 #include "PrintManager.h"
-#include "GMLFile.h"
+#include "VertexEdgeMap.h"
 
 class Edge {
 public:
+	Edge() : 
+	  vertex1(-1), 
+	  vertex2(-1), 
+	  face1(-1), 
+	  face2(-1), 
+	  nextEdgeVertex1(-1), 
+	  nextEdgeVertex2(-1) { }
+
 	int vertex1;
 	int vertex2;
 	int face1;
@@ -14,33 +22,30 @@ public:
 	int nextEdgeVertex2;
 };
 
-class EdgeCycleEntry {
-public:
-	int m_vertex;
-	int m_nextVertex;
-};
-
 class DoublyConnectedEdgeList
 {
 public:
 	// We donate the gmlFile to the DCEL when constructing it.
-	DoublyConnectedEdgeList(std::auto_ptr<GMLFile> gmlFile) : m_GMLFile(gmlFile) { }
+	DoublyConnectedEdgeList(std::auto_ptr<VertexEdgeMap> vertexEdgeMap) : m_vertexEdgeMap(vertexEdgeMap) { }
 
 	bool construct();
 
 	void print(PrintManager &printMan);
 
 private:
+	void addEdgesForVertex(unsigned int vertexIndex);
+	bool constructVertexCycles();
+
 	// Data
-	std::auto_ptr<GMLFile> m_GMLFile;
+	std::auto_ptr<VertexEdgeMap> m_vertexEdgeMap;
 	
 	std::vector<dnl::Point> m_VERTEX;
 	
 	std::vector<Edge> m_edges;
 	std::vector<int> m_firstOccuranceOfVertex;
 
-	std::vector<int> m_firstEdgeInFace;
-	std::vector<EdgeCycleEntry> m_edgeCycles;
+	std::vector<int> m_edgeCycleVertexIndex;
+	std::vector<int> m_edgeCycles;
 	
 
 };

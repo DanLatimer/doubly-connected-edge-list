@@ -11,9 +11,9 @@ public:
 
 	bool construct(GMLFile *gmlFile);
 	void print(PrintManager &printMan);
+	int getVertexIndex(const dnl::Point & point);
 
 private:
-	int getVertexIndex(const dnl::Point & point);
 	struct cmp_point
 	{
 	   bool operator()(const dnl::Point &a, const dnl::Point &b) const
@@ -31,8 +31,9 @@ private:
 
 
 	// Data
+public:
 	std::vector<dnl::Point> m_verticies;
-	std::map<int, int> m_edges;
+	std::vector< std::vector<int> > m_edges;
 	std::map<dnl::Point, int, cmp_point> m_vertexHashMap;
 
 };

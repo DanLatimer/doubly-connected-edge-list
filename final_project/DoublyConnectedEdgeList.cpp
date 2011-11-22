@@ -124,11 +124,11 @@ bool DoublyConnectedEdgeList::constructVertexCycles()
 				lastPosition[r] = numEdges;
 				if(v1Or2 == 1)
 				{
-					m_edges[currentVertexCycle].nextEdgeVertex1 = B[r];
+					m_edges[currentVertexCycle].nextEdgeVertex1 = numEdges;
 				}
 				else
 				{
-					m_edges[currentVertexCycle].nextEdgeVertex2 = B[r];
+					m_edges[currentVertexCycle].nextEdgeVertex2 = numEdges;
 				}
 				currentVertexCycle = numEdges;
 				v1Or2 = 1;
@@ -238,7 +238,7 @@ bool DoublyConnectedEdgeList::constructFaceCycles()
 	int s = 0;
 	int k = 0;
 	int currentFaceCycle = 0; //a0
-	while(k <= 2*m_edges.size())
+	while(k <= 2*(m_edges.size()-1))
 	{
 		if(m_edges[numFaces].face1 != -1 && 
 		   m_edges[numFaces].face2 != -1)
@@ -272,16 +272,16 @@ bool DoublyConnectedEdgeList::constructFaceCycles()
 			while(numFaces != currentFaceCycle)
 			{
 				v1Or2 = (m_edges[numFaces].vertex1 == c) ? 1 : 2;
-				if(v1Or2)
+				if(v1Or2 == 1)
 				{
-					m_edges[numFaces].face1 = c;
+					m_edges[numFaces].face1 = s;
 					c = m_edges[numFaces].vertex1;
 					k++;
 					numFaces = m_edges[numFaces].nextEdgeVertex1;
 				}
 				else
 				{
-					m_edges[numFaces].face2 = c;
+					m_edges[numFaces].face2 = s;
 					c = m_edges[numFaces].vertex2;
 					k++;
 					numFaces = m_edges[numFaces].nextEdgeVertex2;
@@ -314,12 +314,34 @@ bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 		ReportError("Unable to construct DCEL's Vertex Cycles");
 		return false;
 	}
+
+	// Check that all things that should be populated by this point, are populated
+	for(unsigned int i = 0; i < m_edges.size(); i++)
+	{
+		assert(m_edges[i].vertex1 != -1);
+		assert(m_edges[i].vertex2 != -1);
+		assert(m_edges[i].nextEdgeVertex1 != -1);
+		assert(m_edges[i].nextEdgeVertex2 != -1);
+	}
+
 	success = constructFaceCycles();
 	if(success == false)
 	{
 		ReportError("Unable to construct DCEL's Face Cycles");
 		return false;
 	}
+
+	// Check that all things that should be populated by this point, are populated
+	for(unsigned int i = 0; i < m_edges.size(); i++)
+	{
+		assert(m_edges[i].vertex1 != -1);
+		assert(m_edges[i].vertex2 != -1);
+		assert(m_edges[i].face1 != -1);
+		assert(m_edges[i].face2 != -1);
+		assert(m_edges[i].nextEdgeVertex1 != -1);
+		assert(m_edges[i].nextEdgeVertex2 != -1);
+	}
+
 	/*std::vector<dnl::Point> m_VERTEX;
 	
 	std::vector<Edge> m_edges;
@@ -388,14 +410,18 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 			{
 				polyline.addPoint(m_VERTEX[m_edges[edges[0]].vertex1]);
 			}
+			int secondIndex;
 			for(unsigned int j = 0; j < edges.size(); j++)
 			{
 #ifdef _DEBUG
-				const dnl::Point &p1 = polyline.m_points[polyline.m_points.size() - 1]; 
-				const dnl::Point &p2 = m_VERTEX[m_edges[edges[j]].vertex1];
-				assert(p1.m_x == p2.m_x && p1.m_y == p2.m_y); 
+				if(j != 0)
+				{
+					assert(secondIndex == m_edges[edges[j]].vertex1); 
+				}
 #endif
 				polyline.addPoint(m_VERTEX[m_edges[edges[j]].vertex2]);
+
+				secondIndex = m_edges[edges[j]].vertex2;
 			}
 			polyline.printPolygon(printMan, &printMan.m_solidRed);
 		}

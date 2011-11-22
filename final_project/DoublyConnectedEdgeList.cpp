@@ -51,7 +51,6 @@ double get_angle(const dnl::Point &point1, const dnl::Point &point2)
 
 bool DoublyConnectedEdgeList::constructVertexCycles()
 {
-	/*
 	int numEdges = 0;
 	int currentVertexCycle = -1;
 	int v1Or2 = -1;
@@ -81,19 +80,87 @@ bool DoublyConnectedEdgeList::constructVertexCycles()
 
 		// Process the first member (vi, vr) of the input edge list of vi.
 		// Edge only entered if r > i
-		int t = firstEdgeInFace[i];
+		int t = m_edgeCycleVertexIndex[i];
 		assert(t != -1);
-		int r = m_VERTEX[t];
+		int r = m_edgeCycles[t].vertex;
 
 		if(r > i)
 		{
-			//Edges[numEdges].
+			m_edges.push_back(Edge());
+			assert(m_edges.size() - 1 >= numEdges);
+
+			m_edges[numEdges].vertex1 = i;
+			m_edges[numEdges].vertex2 = r;
+
+			m_firstOccuranceOfVertex[i] = numEdges;
+			currentVertexCycle = numEdges;
+			v1Or2 = 1;
+			m_edges[numEdges].nextEdgeVertex2 = lastPosition[r];
+			lastPosition[r] = numEdges;
+			numEdges++;
+		}
+		else
+		{
+			assert(B[r] != -1);
+			m_firstOccuranceOfVertex[i] = B[r];
+			currentVertexCycle = B[r];
+			v1Or2 = 2;
 		}
 
+		// Complete the construction of the vertex cycle for vi
+		while(m_edgeCycles[t].next != m_edgeCycleVertexIndex[i])
+		{
+			t = m_edgeCycles[t].next;
+			r = m_edgeCycles[t].vertex;
+			if(r > i)
+			{
+				// Enter into vertex cycle
+				m_edges.push_back(Edge());
+				assert(m_edges.size() - 1 >= numEdges);
 
+				m_edges[numEdges].vertex1 = i;
+				m_edges[numEdges].vertex2 = r;
+				m_edges[numEdges].nextEdgeVertex2 = lastPosition[r];
+				lastPosition[r] = numEdges;
+				if(v1Or2 == 1)
+				{
+					m_edges[currentVertexCycle].nextEdgeVertex1 = B[r];
+				}
+				else
+				{
+					m_edges[currentVertexCycle].nextEdgeVertex2 = B[r];
+				}
+				currentVertexCycle = numEdges;
+				v1Or2 = 1;
+				numEdges++;
+			}
+			else
+			{
+				// r < i so link this edge into the vertex cycle
+				if(v1Or2 == 1)
+				{
+					m_edges[currentVertexCycle].nextEdgeVertex1 = B[r];
+				}
+				else
+				{
+					m_edges[currentVertexCycle].nextEdgeVertex2 = B[r];
+				}
+				currentVertexCycle = B[r];
+				v1Or2 = 2;
+			}
+		}
+	
+		// Close Vertex Cycle
+		if(v1Or2 == 1)
+		{
+			m_edges[currentVertexCycle].nextEdgeVertex1 = m_firstOccuranceOfVertex[i];
+		}
+		else
+		{
+			m_edges[currentVertexCycle].nextEdgeVertex2 = m_firstOccuranceOfVertex[i];
+		}
 	}
 
-*/
 	return true;
 }
 
@@ -104,14 +171,14 @@ bool compareAnglePairs (
 	return left.first < right.first; 
 }
 
-void DoublyConnectedEdgeList::addEdgesForVertex(const unsigned int vertexIndex)
+void DoublyConnectedEdgeList::addEdgesForVertex(const VertexEdgeMap &vertexEdgeMap, const unsigned int vertexIndex)
 {
 	m_VERTEX[vertexIndex];
 
 	// Get all edges incident on the vertex;
 
 	const std::vector<int> &edgesOnVertex = 
-		m_vertexEdgeMap->m_edges[vertexIndex];
+		vertexEdgeMap.m_edges[vertexIndex];
 
 	if(edgesOnVertex.size() < 1)
 	{
@@ -139,12 +206,15 @@ void DoublyConnectedEdgeList::addEdgesForVertex(const unsigned int vertexIndex)
 	// Add entries in m_edgeCycles
 	for(unsigned int i = 0; i < angles.size(); i++)
 	{
-		m_edgeCycles.push_back(angles[i].second);
+		EdgeCycleEntry entry(angles[i].second, m_edgeCycles.size()+1);
+		if(i == angles.size() - 1)
+		{
+			entry.next = firstEntryForVertex;
+		}
+		m_edgeCycles.push_back(entry);
 	}
 
-	// Add entry to loop back to original vertex;
-	m_edgeCycles.push_back(firstEntryForVertex);
-
+	/*
 	for(unsigned int i = 0; i < edgesOnVertex.size(); i++)
 	{
 		if(edgesOnVertex[i] > vertexIndex)
@@ -156,31 +226,23 @@ void DoublyConnectedEdgeList::addEdgesForVertex(const unsigned int vertexIndex)
 			m_edges.push_back(current);
 		}
 	}
+	*/
 }
 
-bool DoublyConnectedEdgeList::construct()
+bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 {
-	if(m_vertexEdgeMap.get() == NULL)
-	{
-		return false;
-	}
-
-	m_VERTEX = m_vertexEdgeMap->m_verticies;
+	m_VERTEX = vertexEdgeMap.m_verticies;
 
 	for(unsigned int i = 0; i < m_VERTEX.size(); i++)
 	{
-		addEdgesForVertex(i);
+		m_firstOccuranceOfVertex.push_back(-1);
 	}
-	
-	/*std::map<int, int>::iterator iter;
-	for(iter = m_vertexEdgeMap->m_edges.begin(); iter < m_vertexEdgeMap->m_edges.end(); iter++)
-	{
-		Edge current;
-		current.vertex1 = iter->first;
-		current.vertex2 = iter->second;
 
-		m_edges.push_back(current);
-	}*/
+	for(unsigned int i = 0; i < m_VERTEX.size(); i++)
+	{
+		addEdgesForVertex(vertexEdgeMap, i);
+	}
+
 
 	bool success = constructVertexCycles();
 	if(success == false)
@@ -200,9 +262,33 @@ bool DoublyConnectedEdgeList::construct()
 	return true;
 }
 
-void DoublyConnectedEdgeList::print(PrintManager &printMan)
+void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 {
-	// TODO: implement this
+	switch(printWhat)
+	{
+	case 1:
+	{
+		// Print Edges
+		for(unsigned int i = 0; i < m_edges.size(); i++)
+		{
+			dnl::Point vertex1 = m_VERTEX[m_edges[i].vertex1];
+			dnl::Point vertex2 = m_VERTEX[m_edges[i].vertex2];
 
-	assert(0); // Unimplemented function
+			printMan.PrintLine(vertex1, vertex2, &printMan.m_solidBlack);
+		}
+		break;
+	}
+	case 2:
+	{
+		// Print Faces
+		// TODO: implement me!
+		assert(0);
+		break;
+	}
+	default:
+		{
+			ReportError(printWhat + " is an invalid choice of what part to print for a DCEL.");
+			break;
+		}
+	}
 }

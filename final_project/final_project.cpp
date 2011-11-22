@@ -22,6 +22,7 @@ using namespace std;
 #include "RasterImage.h"
 #include "GMLFile.h"
 #include "VertexEdgeMap.h"
+#include "DoublyConnectedEdgeList.h"
 
 //
 // Mouse Wheel rotation stuff, only define if we are
@@ -92,7 +93,7 @@ std::vector<Layer> layers;
 
 
 
-
+DoublyConnectedEdgeList dcel1;
 GMLFile myGMLFile;
 GMLFile myGMLFile2;
 VertexEdgeMap edgeMap1;
@@ -272,6 +273,16 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 			edgeMap2.print(printMan);
 			break;
 		}
+		case 8:
+		{
+			dcel1.print(printMan, 1);
+			break;
+		}
+		case 9:
+		{
+			dcel1.print(printMan, 2);
+			break;
+		}
 		default:
 			break;
 		}
@@ -343,6 +354,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		ReportError("Unable to create edgeMap: " + filename);
 	}
 
+	success = dcel1.construct(edgeMap1);
+	if(!success)
+	{
+		ReportError("Unable to create DCEL: " + filename);
+	}
+
 	string filename2("northAmericanHydroGML1.gml");
 	/*success = myGMLFile2.parse(filename2);
 	if(!success)
@@ -361,8 +378,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	layers.push_back(Layer("Raster Polygon", 3, false));
 	layers.push_back(Layer("GMLFile: " + filename, 4, false));
 	//layers.push_back(Layer("GMLFile: " + filename2, 5, false));
-	layers.push_back(Layer("EdgeMap: " + filename, 6, true));
+	layers.push_back(Layer("EdgeMap: " + filename, 6, false));
 	//layers.push_back(Layer("EdgeMap: " + filename2, 7, true));
+	layers.push_back(Layer("DCEL Lines: " + filename, 8, true));
+	layers.push_back(Layer("DCEL Areas: " + filename, 9, true));
 
 	// Get input
 	getInput(inputPolyline);

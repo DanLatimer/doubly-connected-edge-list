@@ -22,30 +22,36 @@ public:
 	int nextEdgeVertex2;
 };
 
+class EdgeCycleEntry
+{
+public:
+	EdgeCycleEntry(int vertex = -1, int next = -1) : vertex(vertex), next(next) { }
+	int vertex;
+	int next;
+};
+
 class DoublyConnectedEdgeList
 {
 public:
 	// We donate the gmlFile to the DCEL when constructing it.
-	DoublyConnectedEdgeList(std::auto_ptr<VertexEdgeMap> vertexEdgeMap) : m_vertexEdgeMap(vertexEdgeMap) { }
+	DoublyConnectedEdgeList() { }
 
-	bool construct();
+	bool construct(const VertexEdgeMap &vertexEdgeMap);
 
-	void print(PrintManager &printMan);
+	void print(PrintManager &printMan, int printWhat);
 
 private:
-	void addEdgesForVertex(unsigned int vertexIndex);
+	void addEdgesForVertex(const VertexEdgeMap &vertexEdgeMap, const unsigned int vertexIndex);
 	bool constructVertexCycles();
 
 	// Data
-	std::auto_ptr<VertexEdgeMap> m_vertexEdgeMap;
-	
 	std::vector<dnl::Point> m_VERTEX;
 	
 	std::vector<Edge> m_edges;
 	std::vector<int> m_firstOccuranceOfVertex;
 
 	std::vector<int> m_edgeCycleVertexIndex;
-	std::vector<int> m_edgeCycles;
+	std::vector<EdgeCycleEntry> m_edgeCycles;
 	
 
 };

@@ -399,7 +399,7 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 	case 2:
 	{
 		// Print Faces
-		for(unsigned int i = 0; i < m_firstOccuranceOfFace.size(); i++)
+		/*for(unsigned int i = 0; i < m_firstOccuranceOfFace.size(); i++)
 		{
 			assert(m_firstOccuranceOfFace[i] != -1);
 			std::vector<int> edges;
@@ -424,7 +424,7 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 				secondIndex = m_edges[edges[j]].vertex2;
 			}
 			polyline.printPolygon(printMan, &printMan.m_solidRed);
-		}
+		}*/
 		break;
 	}
 	default:

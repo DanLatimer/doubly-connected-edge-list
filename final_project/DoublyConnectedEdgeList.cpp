@@ -4,9 +4,50 @@
 #include "DoublyConnectedEdgeList.h"
 #include "utils.h"
 #include <algorithm>
+#include <cmath>
 
 using namespace std;
 using namespace dnl;
+
+double get_angle(const dnl::Point &point1, const dnl::Point &point2)	
+{
+	double x1 = point1.m_x;
+	double y1 = point1.m_y;
+	double x2 = point2.m_x;
+	double y2 = point2.m_y;
+
+	if(x1==x2 && y1==y2) return(-1);
+
+	double opposite;
+    double adjacent;
+    double angle;
+
+    //calculate vector differences
+    opposite=y1-y2;
+    adjacent=x1-x2;
+ 
+    //trig function to calculate angle
+    if(adjacent==0) // to catch vertical co-ord to prevent division by 0
+    {
+		return (opposite >= 0) ? 0 : 180;
+    }
+    else 
+    {
+        angle=(atan(opposite/adjacent))*180/PI;
+        //the angle calculated will range from +90 degrees to -90 degrees
+        //so the angle needs to be adjusted if point x1 is less or greater then x2
+        if(x1>=x2)
+        {
+            angle=90-angle;
+        }
+        else
+        {
+            angle=270-angle;
+        }
+    } 
+    return angle;
+}
+
 
 bool DoublyConnectedEdgeList::constructVertexCycles()
 {
@@ -78,12 +119,13 @@ void DoublyConnectedEdgeList::addEdgesForVertex(const unsigned int vertexIndex)
 		return;
 	}
 
+	const dnl::Point &vertex = m_VERTEX[vertexIndex];
+
 	std::vector< std::pair<double, int> > angles;
 	for(unsigned int i = 0; i < edgesOnVertex.size(); i++)
 	{
-		double angle = -1;
-		// TODO: compute angle
-		assert(0);
+		const dnl::Point &vertex2 = m_VERTEX[edgesOnVertex[i]];
+		const double angle = get_angle(vertex, vertex2);
 
 		angles.push_back(std::pair<double, int> (angle, edgesOnVertex[i]));
 	}

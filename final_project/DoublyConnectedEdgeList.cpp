@@ -231,60 +231,60 @@ void DoublyConnectedEdgeList::addEdgesForVertex(const VertexEdgeMap &vertexEdgeM
 
 bool DoublyConnectedEdgeList::constructFaceCycles()
 {
-	int numFaces = 0; //a
+	int currentEdge = 0; //a
 	int v1Or2 = -1; //u
 
 	int c;
 	int s = 0;
-	int k = 0;
-	int currentFaceCycle = 0; //a0
-	while(k <= 2*(m_edges.size()-1))
+	int facesSet = 0; //k
+	int firstEdge = 0; //a0
+	while(facesSet <= 2*(m_edges.size()-1))
 	{
-		if(m_edges[numFaces].face1 != -1 && 
-		   m_edges[numFaces].face2 != -1)
+		if(m_edges[currentEdge].face1 != -1 && 
+		   m_edges[currentEdge].face2 != -1)
 		{
-			numFaces++;
+			currentEdge++;
 		}
 		else
 		{
 			// First time for this face
-			v1Or2 = (m_edges[numFaces].face1 == -1) ? 1 : 2;
+			v1Or2 = (m_edges[currentEdge].face1 == -1) ? 1 : 2;
 			if(v1Or2 == 1)
 			{
-				m_edges[numFaces].face1 = s;
-				c = m_edges[numFaces].vertex1;
+				m_edges[currentEdge].face1 = s;
+				c = m_edges[currentEdge].vertex1;
 				m_firstOccuranceOfFace.push_back(-1);
-				m_firstOccuranceOfFace[s] = numFaces;
-				currentFaceCycle = numFaces;
-				k++;
-				numFaces = m_edges[numFaces].nextEdgeVertex1;
+				m_firstOccuranceOfFace[s] = currentEdge;
+				firstEdge = currentEdge;
+				facesSet++;
+				currentEdge = m_edges[currentEdge].nextEdgeVertex1;
 			}
 			else
 			{
-				m_edges[numFaces].face2 = s;
-				c = m_edges[numFaces].vertex2;
+				m_edges[currentEdge].face2 = s;
+				c = m_edges[currentEdge].vertex2;
 				m_firstOccuranceOfFace.push_back(-1);
-				m_firstOccuranceOfFace[s] = numFaces;
-				currentFaceCycle = numFaces;
-				k++;
-				numFaces = m_edges[numFaces].nextEdgeVertex2;
+				m_firstOccuranceOfFace[s] = currentEdge;
+				firstEdge = currentEdge;
+				facesSet++;
+				currentEdge = m_edges[currentEdge].nextEdgeVertex2;
 			}
-			while(numFaces != currentFaceCycle)
+			while(currentEdge != firstEdge)
 			{
-				v1Or2 = (m_edges[numFaces].vertex1 == c) ? 1 : 2;
+				v1Or2 = (m_edges[currentEdge].vertex1 == c) ? 1 : 2;
 				if(v1Or2 == 1)
 				{
-					m_edges[numFaces].face1 = s;
-					c = m_edges[numFaces].vertex1;
-					k++;
-					numFaces = m_edges[numFaces].nextEdgeVertex1;
+					m_edges[currentEdge].face1 = s;
+					c = m_edges[currentEdge].vertex1;
+					facesSet++;
+					currentEdge = m_edges[currentEdge].nextEdgeVertex1;
 				}
 				else
 				{
-					m_edges[numFaces].face2 = s;
-					c = m_edges[numFaces].vertex2;
-					k++;
-					numFaces = m_edges[numFaces].nextEdgeVertex2;
+					m_edges[currentEdge].face2 = s;
+					c = m_edges[currentEdge].vertex2;
+					facesSet++;
+					currentEdge = m_edges[currentEdge].nextEdgeVertex2;
 				}
 			}
 			s++;
@@ -352,30 +352,30 @@ bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 	return true;
 }
 
-void DoublyConnectedEdgeList::findEdgesOfFace(int faceIndex, std::vector<int> &edges)
+void DoublyConnectedEdgeList::findEdgesOfFace(int faceIndex, std::vector<int> &points)
 {
-	int a = m_firstOccuranceOfFace[faceIndex];
-	int a0 = a;
-	edges.push_back(a);
+	int currentEdge = m_firstOccuranceOfFace[faceIndex]; //a
+	int firstEdge = currentEdge; //a0
+	points.push_back(currentEdge);
 
-	if(m_edges[a].vertex1 == faceIndex)
+	if(m_edges[currentEdge].vertex1 == faceIndex)
 	{
-		a = m_edges[a].nextEdgeVertex1;
+		currentEdge = m_edges[currentEdge].nextEdgeVertex1;
 	}
 	else
 	{
-		a = m_edges[a].nextEdgeVertex2;
+		currentEdge = m_edges[currentEdge].nextEdgeVertex2;
 	}
-	while(a != a0)
+	while(currentEdge != firstEdge)
 	{
-		edges.push_back(a);
-		if(m_edges[a].vertex1 == faceIndex)
+		points.push_back(currentEdge);
+		if(m_edges[currentEdge].vertex1 == faceIndex)
 		{
-			a = m_edges[a].nextEdgeVertex1;
+			currentEdge = m_edges[currentEdge].nextEdgeVertex1;
 		}
 		else
 		{
-			a = m_edges[a].nextEdgeVertex2;
+			currentEdge = m_edges[currentEdge].nextEdgeVertex2;
 		}
 	}
 }
@@ -399,32 +399,20 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 	case 2:
 	{
 		// Print Faces
-		/*for(unsigned int i = 0; i < m_firstOccuranceOfFace.size(); i++)
+		for(unsigned int i = 0; i < m_firstOccuranceOfFace.size(); i++)
 		{
 			assert(m_firstOccuranceOfFace[i] != -1);
-			std::vector<int> edges;
-			findEdgesOfFace(i, edges);
-			
-			dnl::Polyline polyline("Area " + i);
-			if(edges.size() > 0)
-			{
-				polyline.addPoint(m_VERTEX[m_edges[edges[0]].vertex1]);
-			}
-			int secondIndex;
-			for(unsigned int j = 0; j < edges.size(); j++)
-			{
-#ifdef _DEBUG
-				if(j != 0)
-				{
-					assert(secondIndex == m_edges[edges[j]].vertex1); 
-				}
-#endif
-				polyline.addPoint(m_VERTEX[m_edges[edges[j]].vertex2]);
+			std::vector<int> pointsIndicies;
+			findEdgesOfFace(i, pointsIndicies);
 
-				secondIndex = m_edges[edges[j]].vertex2;
+			std::vector<dnl::Point> points;
+			for(unsigned int j = 0; j < pointsIndicies.size(); j++)
+			{
+				points.push_back(m_VERTEX[pointsIndicies[j]]);
 			}
-			polyline.printPolygon(printMan, &printMan.m_solidRed);
-		}*/
+				
+			printMan.PrintPolygon(points, &printMan.m_solidRed);
+		}
 		break;
 	}
 	default:

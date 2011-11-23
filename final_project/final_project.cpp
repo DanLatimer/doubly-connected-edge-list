@@ -339,7 +339,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
 	// Try rapidXML
-	string filename("test1_pentagon.gml"); 
+	//string filename("test1_pentagon.gml"); 
+	//string filename("test2_square.gml"); 
+	//string filename("test3_noAreaLine1.gml"); 
+	string filename("test4_disjointPolygons.gml");  
 	//string filename("northAmericanRoadsGML1.gml");
 	//string filename("newhampshire_areawater.gml");
 	//string filename("vermont_roads.gml");

@@ -271,7 +271,7 @@ bool DoublyConnectedEdgeList::constructFaceCycles()
 			}
 			while(currentEdge != firstEdge)
 			{
-				v1Or2 = (m_edges[currentEdge].vertex1 == c) ? 1 : 2;
+				v1Or2 = (m_edges[currentEdge].vertex1 == c) ? 2 : 1;
 				if(v1Or2 == 1)
 				{
 					m_edges[currentEdge].face1 = s;
@@ -352,31 +352,103 @@ bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 	return true;
 }
 
-void DoublyConnectedEdgeList::findEdgesOfFace(int faceIndex, std::vector<int> &edges)
+void DoublyConnectedEdgeList::findEdgesOfFace(int theFace, std::vector< std::pair<int, bool> > &edges)
 {
-	int currentEdge = m_firstOccuranceOfFace[faceIndex]; //a
+	int currentEdge = m_firstOccuranceOfFace[theFace]; //a
 	int firstEdge = currentEdge; //a0
-	edges.push_back(currentEdge);
 
-	if(m_edges[currentEdge].face1 == faceIndex)
+	bool forward = (m_edges[currentEdge].face1 != theFace);
+	edges.push_back(std::pair<int, bool>(currentEdge, forward));
+
+	if(!forward)
 	{
+		// Negative Edge?
 		currentEdge = m_edges[currentEdge].nextEdgeVertex1;
 	}
 	else
 	{
+		// Positive Edge?
 		currentEdge = m_edges[currentEdge].nextEdgeVertex2;
 	}
+
+	int lastDoubleFacedVertex = -1;
+	bool backtrack = false;
 	while(currentEdge != firstEdge)
 	{
-		edges.push_back(currentEdge);
-		if(m_edges[currentEdge].face1 == faceIndex)
+		// Backtrack!
+
+		if(m_edges[currentEdge].nextEdgeVertex1 == currentEdge ||
+		   m_edges[currentEdge].nextEdgeVertex2 == currentEdge)
 		{
+			// pick the edge that isn't looping back on itself
+			if(currentEdge != m_edges[currentEdge].nextEdgeVertex1)
+			{
+				currentEdge = m_edges[currentEdge].nextEdgeVertex1;
+			}
+			else if(currentEdge != m_edges[currentEdge].nextEdgeVertex2)
+			{
+				currentEdge = m_edges[currentEdge].nextEdgeVertex2;
+			}
+			else
+			{
+				// Edge has no where to go
+				assert(0);
+			}
+			backtrack = true;
+			continue;
+		}
+
+		
+		if(m_edges[currentEdge].face1 != m_edges[currentEdge].face2)
+		{
+			backtrack = false;
+		}
+
+		forward = (m_edges[currentEdge].face1 != theFace);
+		if(backtrack)
+		{
+			forward = !forward;
+		}
+		edges.push_back(std::pair<int, bool>(currentEdge, forward));
+
+		if(!forward)
+		{
+			// Negative Edge?
 			currentEdge = m_edges[currentEdge].nextEdgeVertex1;
 		}
 		else
 		{
+			// Positive Edge?
 			currentEdge = m_edges[currentEdge].nextEdgeVertex2;
 		}
+
+
+		// Follow the lines
+		/*
+		if(currentEdge == (edges.end()-1)->first)
+		{
+			forward = !forward;	
+		}
+		else
+		{
+			if(m_edges[currentEdge].face1 != m_edges[currentEdge].face2)
+			{
+				forward = (m_edges[currentEdge].face1 != faceIndex);
+			}
+			edges.push_back(std::pair<int, bool>(currentEdge, forward));
+		}
+
+		if(!forward)
+		{
+			// Negative Edge?
+			currentEdge = m_edges[currentEdge].nextEdgeVertex1;
+		}
+		else
+		{
+			// Positive Edge?
+			currentEdge = m_edges[currentEdge].nextEdgeVertex2;
+		}
+		*/
 	}
 }
 
@@ -392,7 +464,7 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 			dnl::Point vertex1 = m_VERTEX[m_edges[i].vertex1];
 			dnl::Point vertex2 = m_VERTEX[m_edges[i].vertex2];
 
-			printMan.PrintLine(vertex1, vertex2, &printMan.m_solidBlack);
+			printMan.PrintLine(vertex1, vertex2, &printMan.m_solidBlack); 
 		}
 		break;
 	}
@@ -402,7 +474,7 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 		for(unsigned int i = 0; i < m_firstOccuranceOfFace.size(); i++)
 		{
 			assert(m_firstOccuranceOfFace[i] != -1);
-			std::vector<int> edgeIndicies;
+			std::vector<std::pair<int, bool> > edgeIndicies;
 			findEdgesOfFace(i, edgeIndicies);
 
 			std::vector<dnl::Point> points;
@@ -410,9 +482,24 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 			{
 				if(j == 0)
 				{
-					points.push_back(m_VERTEX[m_edges[edgeIndicies[j]].vertex1]);
+					if(edgeIndicies[j].second)
+					{
+						points.push_back(m_VERTEX[m_edges[edgeIndicies[j].first].vertex1]);
+					}
+					else
+					{
+						points.push_back(m_VERTEX[m_edges[edgeIndicies[j].first].vertex2]);
+					}
 				}
-				points.push_back(m_VERTEX[m_edges[edgeIndicies[j]].vertex2]);
+
+				if(edgeIndicies[j].second)
+				{
+					points.push_back(m_VERTEX[m_edges[edgeIndicies[j].first].vertex2]);
+				}
+				else
+				{
+					points.push_back(m_VERTEX[m_edges[edgeIndicies[j].first].vertex1]);
+				}
 			}
 				
 			printMan.PrintPolygon(points, &printMan.getRandomColour(50));

@@ -352,13 +352,13 @@ bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 	return true;
 }
 
-void DoublyConnectedEdgeList::findEdgesOfFace(int faceIndex, std::vector<int> &points)
+void DoublyConnectedEdgeList::findEdgesOfFace(int faceIndex, std::vector<int> &edges)
 {
 	int currentEdge = m_firstOccuranceOfFace[faceIndex]; //a
 	int firstEdge = currentEdge; //a0
-	points.push_back(currentEdge);
+	edges.push_back(currentEdge);
 
-	if(m_edges[currentEdge].vertex1 == faceIndex)
+	if(m_edges[currentEdge].face1 == faceIndex)
 	{
 		currentEdge = m_edges[currentEdge].nextEdgeVertex1;
 	}
@@ -368,8 +368,8 @@ void DoublyConnectedEdgeList::findEdgesOfFace(int faceIndex, std::vector<int> &p
 	}
 	while(currentEdge != firstEdge)
 	{
-		points.push_back(currentEdge);
-		if(m_edges[currentEdge].vertex1 == faceIndex)
+		edges.push_back(currentEdge);
+		if(m_edges[currentEdge].face1 == faceIndex)
 		{
 			currentEdge = m_edges[currentEdge].nextEdgeVertex1;
 		}
@@ -402,16 +402,20 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 		for(unsigned int i = 0; i < m_firstOccuranceOfFace.size(); i++)
 		{
 			assert(m_firstOccuranceOfFace[i] != -1);
-			std::vector<int> pointsIndicies;
-			findEdgesOfFace(i, pointsIndicies);
+			std::vector<int> edgeIndicies;
+			findEdgesOfFace(i, edgeIndicies);
 
 			std::vector<dnl::Point> points;
-			for(unsigned int j = 0; j < pointsIndicies.size(); j++)
+			for(unsigned int j = 0; j < edgeIndicies.size(); j++)
 			{
-				points.push_back(m_VERTEX[pointsIndicies[j]]);
+				if(j == 0)
+				{
+					points.push_back(m_VERTEX[m_edges[edgeIndicies[j]].vertex1]);
+				}
+				points.push_back(m_VERTEX[m_edges[edgeIndicies[j]].vertex2]);
 			}
 				
-			printMan.PrintPolygon(points, &printMan.m_solidRed);
+			printMan.PrintPolygon(points, &printMan.getRandomColour(50));
 		}
 		break;
 	}

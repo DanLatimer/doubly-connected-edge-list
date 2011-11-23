@@ -339,7 +339,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
 	// Try rapidXML
-	string filename("northAmericanRoadsGML1.gml");
+	string filename("test1_pentagon.gml"); 
+	//string filename("northAmericanRoadsGML1.gml");
 	//string filename("newhampshire_areawater.gml");
 	//string filename("vermont_roads.gml");
 	bool success = myGMLFile.parse(filename);

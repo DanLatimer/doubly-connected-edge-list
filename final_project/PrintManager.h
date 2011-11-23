@@ -36,6 +36,9 @@ public:
 
 	bool m_LLDG;
 
+	// Utils
+	Colour getRandomColour(int opacity);
+
 	// Print Primitives
 	void PrintPoint(const dnl::Point &point, Colour *colour = NULL);
 	void FillPoint(const dnl::Point &point, Colour *colour = NULL);

@@ -22,6 +22,11 @@ Color colourToColor(Colour colour)
 	return Color(colour.m_opacity, colour.m_red, colour.m_green, colour.m_blue);
 }
 
+Colour PrintManager::getRandomColour(int opacity)
+{
+	return Colour(opacity, rand() % 255, rand() % 255, rand() % 255); 
+}
+
 PrintManager::PrintManager(
 	const dnl::Point & LLWindow,
 	const dnl::Point & URWindow,

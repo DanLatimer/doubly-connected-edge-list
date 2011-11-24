@@ -256,7 +256,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	//string filename("test3_noAreaLine3.gml");   
 	//string filename("test3_noAreaLine4.gml");   
 	//string filename("test4_disjointPolygons.gml");  
-	string filename("northAmericanRoadsGML1.gml");
+	string filename("northAmericanRoadsGML1.gml"); 
 	//string filename("newhampshire_areawater.gml");
 	//string filename("vermont_roads.gml");
 	//string filename("northAmericanHydroGML1.gml");
@@ -295,8 +295,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	//layers.push_back(Layer("GMLFile: " + filename2, 5, false));
 	layers.push_back(Layer("EdgeMap: " + filename, 6, false));
 	//layers.push_back(Layer("EdgeMap: " + filename2, 7, true));
-	layers.push_back(Layer("DCEL Lines: " + filename, 8, true));
-	layers.push_back(Layer("DCEL Areas: " + filename, 9, true));
+	layers.push_back(Layer("DCEL Areas: " + filename, 8, true));
+	layers.push_back(Layer("DCEL Lines: " + filename, 9, true));
 
 	HACCEL				hAccelTable;
 	HWND                hWnd;

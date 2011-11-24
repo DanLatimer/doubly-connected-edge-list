@@ -54,7 +54,7 @@ private:
 	void addEdgesForVertex(const VertexEdgeMap &vertexEdgeMap, const unsigned int vertexIndex);
 	bool constructVertexCycles();
 	bool constructFaceCycles();
-	void findEdgesOfFace(int faceIndex, std::vector< std::pair<int, bool> > &edges);
+	bool findEdgesOfFace(int faceIndex, std::vector< std::pair<int, bool> > &edges);
 	void createFaces();
 
 	// Data

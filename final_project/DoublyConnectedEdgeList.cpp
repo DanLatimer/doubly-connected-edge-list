@@ -370,7 +370,7 @@ bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 	return true;
 }
 
-void DoublyConnectedEdgeList::findEdgesOfFace(int theFace, std::vector< std::pair<int, bool> > &edges)
+bool DoublyConnectedEdgeList::findEdgesOfFace(int theFace, std::vector< std::pair<int, bool> > &edges)
 {
 	int currentEdge = m_firstOccuranceOfFace[theFace]; //a
 	int firstEdge = currentEdge; //a0
@@ -389,52 +389,16 @@ void DoublyConnectedEdgeList::findEdgesOfFace(int theFace, std::vector< std::pai
 		currentEdge = m_edges[currentEdge].nextEdgeVertex2;
 	}
 
-	int lastDoubleFacedVertex = -1;
-	bool backtrack = false;
 	while(currentEdge != firstEdge)
 	{
+		// Never enter an edge that has the same face on both sides, look for alternative
 		if(m_edges[currentEdge].face1 == m_edges[currentEdge].face2)
 		{
-			const int previousEdge = (edges.end()-1)->first;
-			if(m_edges[previousEdge].face1 != m_edges[previousEdge].face2)
-			{
-				lastDoubleFacedVertex = currentEdge;
-			}
-		}
-
-		// Backtrack!
-		if(m_edges[currentEdge].nextEdgeVertex1 == currentEdge ||
-		   m_edges[currentEdge].nextEdgeVertex2 == currentEdge)
-		{
-			// pick the edge that isn't looping back on itself
-			if(currentEdge != m_edges[currentEdge].nextEdgeVertex1)
-			{
-				currentEdge = m_edges[currentEdge].nextEdgeVertex1;
-			}
-			else if(currentEdge != m_edges[currentEdge].nextEdgeVertex2)
-			{
-				currentEdge = m_edges[currentEdge].nextEdgeVertex2;
-			}
-			else
-			{
-				// Edge has no where to go
-				assert(0);
-			}
-			backtrack = true;
-			continue;
+			return false;
 		}
 
 		forward = (m_edges[currentEdge].face1 != theFace);
-		if(backtrack)
-		{
-			forward = !forward;
-		}
 		edges.push_back(std::pair<int, bool>(currentEdge, forward));
-
-		if(backtrack == true && m_edges[currentEdge] == m_edges[lastDoubleFacedVertex])
-		{
-			backtrack = false;
-		}
 
 		if(!forward)
 		{
@@ -475,6 +439,7 @@ void DoublyConnectedEdgeList::findEdgesOfFace(int theFace, std::vector< std::pai
 		}
 		*/
 	}
+	return true;
 }
 
 void DoublyConnectedEdgeList::createFaces()
@@ -482,10 +447,17 @@ void DoublyConnectedEdgeList::createFaces()
 	for(unsigned int i = 0; i < m_firstOccuranceOfFace.size(); i++)
 	{
 		assert(m_firstOccuranceOfFace[i] != -1);
-		std::vector<std::pair<int, bool> > edgeIndicies;
-		findEdgesOfFace(i, edgeIndicies);
+
 
 		std::vector<dnl::Point> points;
+		std::vector<std::pair<int, bool> > edgeIndicies;
+		bool success = findEdgesOfFace(i, edgeIndicies);
+		if(!success)
+		{
+			m_FACES.push_back(points);
+			continue;
+		}
+
 		for(unsigned int j = 0; j < edgeIndicies.size(); j++)
 		{
 			if(j == 0)

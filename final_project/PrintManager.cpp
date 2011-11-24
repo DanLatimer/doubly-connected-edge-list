@@ -79,21 +79,31 @@ int PrintManager::transformWidth(const int width)
 	return (int)(width * m_multX);
 }
 
+float PrintManager::transformWidth(const float width)
+{
+	return width * (float)m_multX;
+}
+
 int PrintManager::transformHeight(const int height)
 {
 	return (int)(height * m_multX);
 }
 
-int PrintManager::transformTextSize(const int size)
+float PrintManager::transformHeight(const float height)
 {
-	return (int)(size * m_multX);
+	return height * (float)m_multX;
 }
 
-void PrintManager::PrintArrow(dnl::Point begin, dnl::Point end)
+float PrintManager::transformTextSize(const float size)
 {
-	int arrowSize = 2;
-	int arrowLength = 5 * arrowSize;
-	int arrowWidth = 3 * arrowSize;
+	return size * 100 /** (float)m_multX*/;
+}
+
+void PrintManager::PrintArrow(dnl::Point begin, dnl::Point end, float size /*= 1*/)
+{
+	float arrowSize = 2 * size;
+	float arrowLength = 5 * arrowSize;
+	float arrowWidth = 3 * arrowSize;
 
 	dnl::Point AL, AR;
 	{
@@ -160,7 +170,7 @@ void PrintManager::PrintLine(dnl::Point begin, dnl::Point end, Colour *colour/* 
 void PrintManager::PrintText(
 	const dnl::Point begin, 
 	const std::string &text,
-	int size /*= 27*/,
+	float size /*= 27*/,
 	Colour *colour /*= NULL*/)
 {
 	if(colour == NULL)
@@ -360,8 +370,8 @@ void PrintManager::PrintRasterGrid(
 				Rect rectangle(
 					transformX(x), 
 					transformY(y),
-					transformWidth(oneBoxWidth), 
-					transformHeight(oneBoxHeight));
+					transformWidth((int)oneBoxWidth), 
+					transformHeight((int)oneBoxHeight));
 				m_graphics->FillRectangle(&brush, rectangle);
 				colourToUse = &m_solidWhite;
 			}
@@ -377,7 +387,30 @@ void PrintManager::PrintRasterGrid(
 		}
 	}
 }
-void PrintManager::FillPoint(const dnl::Point &point, Colour *colour /*= NULL*/)
+
+void PrintManager::PrintScreenText(std::wstringstream &info, const dnl::Point &origin)
+{
+	// Output text
+	FontFamily  fontFamily(L"Helvetica");
+	Font        font(&fontFamily, 12, FontStyleRegular, UnitPixel);
+	SolidBrush  solidBrush(Color(255, 0, 0, 0));
+
+	for(int i = 0; true; i++)
+	{
+		WCHAR currLine[1000] = {0};
+		info.getline(currLine, 1000);
+		if(currLine[0] == 0)
+		{
+			break;
+		}
+
+		PointF      pointF(origin.m_x, i*18.0f + origin.m_y);
+		m_graphics->SetTextRenderingHint(TextRenderingHintAntiAlias);
+		m_graphics->DrawString(currLine, -1, &font, pointF, &solidBrush);
+	}
+}
+
+void PrintManager::FillPoint(const dnl::Point &point, float size /*= 1*/, Colour *colour /*= NULL*/)
 {
 	if(colour == NULL)
 	{
@@ -387,9 +420,8 @@ void PrintManager::FillPoint(const dnl::Point &point, Colour *colour /*= NULL*/)
 	GraphicsPath path;
 	SolidBrush   brush(colourToColor(*colour));
 
-	double size = 1;
-	float width = (float)transformWidth(size);
-	float height = (float)transformHeight(size);
+	float width = transformTextSize(size);
+	float height = transformTextSize(size);
 
 	path.AddEllipse(
 		transformX(point.m_x) - width/2, 
@@ -400,7 +432,7 @@ void PrintManager::FillPoint(const dnl::Point &point, Colour *colour /*= NULL*/)
 	m_graphics->FillPath(&brush, &path);
 }
 
-void PrintManager::PrintPoint(const dnl::Point &point, Colour *colour /*= NULL*/)
+void PrintManager::PrintPoint(const dnl::Point &point, float size /*= 1*/, Colour *colour /*= NULL*/)
 {
 	if(colour == NULL)
 	{
@@ -410,9 +442,8 @@ void PrintManager::PrintPoint(const dnl::Point &point, Colour *colour /*= NULL*/
 	GraphicsPath path;
 	Pen          pen(colourToColor(*colour), 2);
 
-	double size = 1;
-	float width = (float)transformWidth(size);
-	float height = (float)transformHeight(size);
+	float width = transformWidth(size);
+	float height = transformHeight(size);
 
 	path.AddEllipse(
 		transformX(point.m_x) - width/2, 

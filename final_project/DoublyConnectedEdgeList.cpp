@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include <sstream>
+
 using namespace std;
 using namespace dnl;
 
@@ -392,10 +394,10 @@ bool DoublyConnectedEdgeList::findEdgesOfFace(int theFace, std::vector< std::pai
 	while(currentEdge != firstEdge)
 	{
 		// Never enter an edge that has the same face on both sides, look for alternative
-		if(m_edges[currentEdge].face1 == m_edges[currentEdge].face2)
+		/*if(m_edges[currentEdge].face1 == m_edges[currentEdge].face2) 
 		{
 			return false;
-		}
+		}*/
 
 		forward = (m_edges[currentEdge].face1 != theFace);
 		edges.push_back(std::pair<int, bool>(currentEdge, forward));
@@ -455,8 +457,11 @@ void DoublyConnectedEdgeList::createFaces()
 		if(!success)
 		{
 			m_FACES.push_back(points);
+			std::vector<std::pair<int, bool> > failed;
+			m_FACEEdges.push_back(failed);
 			continue;
 		}
+		m_FACEEdges.push_back(edgeIndicies);
 
 		for(unsigned int j = 0; j < edgeIndicies.size(); j++)
 		{
@@ -499,7 +504,62 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 			dnl::Point vertex2 = m_VERTEX[m_edges[i].vertex2];
 
 			printMan.PrintLine(vertex1, vertex2, &printMan.m_solidBlack); 
+
+#ifdef _DEBUG
+			// Print directional arrow
+			printMan.PrintArrow(vertex1, vertex2, 0.01);
+
+			// Print Edge names
+			char text[100] = "E";
+			itoa(i, text + 1, 10);
+			dnl::Point textPoint((vertex1.m_x + vertex2.m_x)/2, (vertex1.m_y + vertex2.m_y)/2); 
+			printMan.PrintText(textPoint, text, 0.25);
+
+#endif
 		}
+
+#ifdef _DEBUG
+		// Print Verticies
+		char text[100] = "V";
+		for(unsigned int i = 0; i < m_VERTEX.size(); i++)
+		{
+			itoa(i, text + 1, 10);
+			printMan.FillPoint(m_VERTEX[i], 0.1);
+			printMan.PrintText(m_VERTEX[i], text, 0.25);
+		}
+
+		// Print Faces
+		std::wstringstream info;
+		info << "Faces:" << std::endl;
+		for(unsigned int i = 0; i < m_FACEEdges.size(); i++)
+		{
+			info << "Face " << i << " = [";
+			if(m_FACEEdges[i].size() == 0)
+			{
+				info << "failed";
+			}
+			else
+			{
+				for(unsigned int j = 0; j < m_FACEEdges[i].size(); j++)
+				{
+					if(j != 0)
+					{
+						info << ", ";
+					}
+					if(m_FACEEdges[i][j].second == false)
+					{
+						info << "-";
+					}
+					info << "E" << m_FACEEdges[i][j].first;
+				}
+			}
+			info << "]" << std::endl;
+		}
+
+		printMan.PrintScreenText(info, dnl::Point(300,20));
+
+#endif
+
 		break;
 	}
 	case 2:
@@ -507,7 +567,7 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 		// Print Faces
 		for(unsigned int i = 0; i < m_FACES.size(); i++)
 		{
-			printMan.PrintPolygon(m_FACES[i], &printMan.getRandomColour(255));
+			printMan.PrintPolygon(m_FACES[i], &printMan.getRandomColour(60));
 		}
 		break;
 	}

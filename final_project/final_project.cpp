@@ -130,11 +130,15 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 	graphics.DrawLine(&pen, winX/2, 0.0, winX/2, winY);
 #endif
 
-	// Output text
-	FontFamily  fontFamily(L"Helvetica");
-	Font        font(&fontFamily, 12, FontStyleRegular, UnitPixel);
-	SolidBrush  solidBrush(Color(255, 0, 0, 0));
+	// Output graphics
+	double width = URWindow.m_x - LLWindow.m_x;
+	double height = URWindow.m_y - LLWindow.m_y;
+	double multX = winX / width;
+	double multY = winY / height;
 
+	PrintManager printMan(LLWindow, URWindow, multX, multY, winWidth, winHeight, &hdc);
+
+	// Output text
 	std::wstringstream info;
 	info << "CONTROLS:" << std::endl;
 	info << "Left click and drag to pull the screen." << std::endl;
@@ -157,27 +161,7 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 		info << "Layer " << i+1 << ": " << layers[i].name.c_str() << std::endl;
 	}
 
-	for(int i = 0; true; i++)
-	{
-		WCHAR currLine[1000] = {0};
-		info.getline(currLine, 1000);
-		if(currLine[0] == 0)
-		{
-			break;
-		}
-
-		PointF      pointF(20.0f, i*18.0f + 20.0f);
-		graphics.SetTextRenderingHint(TextRenderingHintAntiAlias);
-		graphics.DrawString(currLine, -1, &font, pointF, &solidBrush);
-	}
-	
-	// Output graphics
-	double width = URWindow.m_x - LLWindow.m_x;
-	double height = URWindow.m_y - LLWindow.m_y;
-	double multX = winX / width;
-	double multY = winY / height;
-
-	PrintManager printMan(LLWindow, URWindow, multX, multY, winWidth, winHeight, &hdc);
+	printMan.PrintScreenText(info, dnl::Point(20,20));
 
 	for(unsigned int i = 0; i < layers.size(); i++)
 	{
@@ -254,9 +238,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	//string filename("test3_noAreaLine1.gml"); 
 	//string filename("test3_noAreaLine2.gml"); 
 	//string filename("test3_noAreaLine3.gml");   
-	//string filename("test3_noAreaLine4.gml");   
+	//string filename("test3_noAreaLine4.gml");  
+	//string filename("test3_noAreaLine5.gml"); 
+	//string filename("test3_noAreaLine6.gml"); 
+	//string filename("test3_noAreaLine7.gml"); 
+	//string filename("test3_noAreaLine8.gml");
+	string filename("test3_noAreaLine9.gml");
 	//string filename("test4_disjointPolygons.gml");  
-	string filename("northAmericanRoadsGML1.gml"); 
+	//string filename("northAmericanRoadsGML1.gml"); 
 	//string filename("newhampshire_areawater.gml");
 	//string filename("vermont_roads.gml");
 	//string filename("northAmericanHydroGML1.gml");

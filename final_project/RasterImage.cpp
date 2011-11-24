@@ -452,7 +452,7 @@ void RasterImage::printRasterImage(PrintManager &printMan, int printWhat)
 			}
 
 			printMan.PrintLine(current,	next, &printMan.m_solidBlack, 5);
-			printMan.PrintPoint(current, pointColour);
+			printMan.PrintPoint(current, 1, pointColour);
 			//printMan.PrintText(current, itoa(i, buffer, 10), 1);
 
 			previous = current;

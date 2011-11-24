@@ -40,11 +40,13 @@ public:
 	Colour getRandomColour(int opacity);
 
 	// Print Primitives
-	void PrintPoint(const dnl::Point &point, Colour *colour = NULL);
-	void FillPoint(const dnl::Point &point, Colour *colour = NULL);
+	void PrintPoint(const dnl::Point &point, float size = 1, Colour *colour = NULL);
+	void FillPoint(const dnl::Point &point, float size = 1,Colour *colour = NULL);
 	void PrintLine(dnl::Point begin, dnl::Point end, Colour *colour = NULL, float width = 1);
-	void PrintArrow(dnl::Point begin, dnl::Point end);
-	void PrintText(const dnl::Point begin, const std::string &text, int size = 27, Colour *colour = NULL);
+	void PrintArrow(dnl::Point begin, dnl::Point end, float size = 1);
+	void PrintText(const dnl::Point begin, const std::string &text, float size = 27, Colour *colour = NULL);
+	void PrintScreenText(std::wstringstream &info, const dnl::Point &origin);
+
 
 	// Print Complex Structures
 	void PrintPolygon(const std::vector<dnl::Point> &points, Colour *colour = NULL);
@@ -83,7 +85,9 @@ private:
 	float transformY(const double yValue);
 	int transformWidth(const int width);
 	int transformHeight(const int height);
-	int transformTextSize(const int size);
+	float transformWidth(const float width);
+	float transformHeight(const float height);
+	float transformTextSize(const float size);
 
 	// Data members
 	HDC *m_hdc;

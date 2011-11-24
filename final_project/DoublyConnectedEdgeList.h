@@ -60,6 +60,7 @@ private:
 	// Data
 	std::vector<dnl::Point> m_VERTEX;
 	std::vector< std::vector<dnl::Point> > m_FACES;
+	std::vector< std::vector<std::pair<int, bool> > > m_FACEEdges;
 	
 	std::vector<Edge> m_edges;
 	std::vector<int> m_firstOccuranceOfVertex;

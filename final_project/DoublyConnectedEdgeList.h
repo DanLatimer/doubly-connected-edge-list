@@ -20,6 +20,16 @@ public:
 	int face2;
 	int nextEdgeVertex1;
 	int nextEdgeVertex2;
+
+	friend bool operator== (Edge &cP1, Edge &cP2)
+	{
+		return cP1.vertex1 == cP2.vertex1 &&
+			   cP1.vertex2 == cP2.vertex2 &&
+			   cP1.face1 == cP2.face1 &&
+			   cP1.face2 == cP2.face2 &&
+			   cP1.nextEdgeVertex1 == cP2.nextEdgeVertex1 &&
+			   cP1.nextEdgeVertex2 == cP2.nextEdgeVertex2;
+	}
 };
 
 class EdgeCycleEntry
@@ -45,9 +55,11 @@ private:
 	bool constructVertexCycles();
 	bool constructFaceCycles();
 	void findEdgesOfFace(int faceIndex, std::vector< std::pair<int, bool> > &edges);
+	void createFaces();
 
 	// Data
 	std::vector<dnl::Point> m_VERTEX;
+	std::vector< std::vector<dnl::Point> > m_FACES;
 	
 	std::vector<Edge> m_edges;
 	std::vector<int> m_firstOccuranceOfVertex;

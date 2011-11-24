@@ -14,21 +14,10 @@ using namespace std;
 
 #include "final_project.h"
 
-#include "Strip.h"
-#include "Point.h"
-#include "Polyline.h"
-#include "Algorithms.h"
-#include "RunLengthCoding.h"
-#include "RasterImage.h"
 #include "GMLFile.h"
 #include "VertexEdgeMap.h"
 #include "DoublyConnectedEdgeList.h"
 
-//
-// Mouse Wheel rotation stuff, only define if we are
-// on a version of the OS that does not support
-// WM_MOUSEWHEEL messages.
-//
 #ifndef WM_MOUSEWHEEL
 #define WM_MOUSEWHEEL WM_MOUSELAST+1 
     // Message ID for IntelliMouse wheel
@@ -51,11 +40,6 @@ ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
-
-
-
-
-
 
 /*--------------------------------------------------------------
  * Configuration
@@ -88,21 +72,13 @@ public:
 };
 
 std::vector<Layer> layers;
-
-
-
-
+std::vector< std::pair<dnl::Point, dnl::Point> > linesToPrint;
 
 DoublyConnectedEdgeList dcel1;
 GMLFile myGMLFile;
 GMLFile myGMLFile2;
 VertexEdgeMap edgeMap1;
 VertexEdgeMap edgeMap2;
-
-std::auto_ptr<RasterImage> inputRasterized;
-dnl::Polyline inputPolyline("whatever");
-std::vector< std::vector<int> > my2DVector;
-std::vector< std::pair<dnl::Point, dnl::Point> > linesToPrint;
 
 dnl::Point LLWindow = dnl::Point(0,0);
 dnl::Point URWindow = dnl::Point(SCREENSIZE_X,SCREENSIZE_Y);
@@ -127,19 +103,10 @@ dnl::Point screenToUniverse(HWND hWnd, dnl::Point screenPoint)
 	return returnPoint;
 }
 
-void DrawLine(HDC hdc, REAL x1, REAL y1, REAL x2, REAL y2)
-{
-	Graphics graphics(hdc);
-
-	Pen      pen(Color(255, 0, 0, 255));
-	graphics.DrawLine(&pen, x1, y1, x2, y2);
-}
-
 VOID OnPaint(HWND hWnd, HDC hdc)
 {
 	// For more info see
 	// http://msdn.microsoft.com/en-us/library/ms533802%28v=VS.85%29.aspx
-
 
 	// TODO: Get window size (incase it changed) and subtract/add 
 	//       to our window size the X inc/dec and Y inc/dec
@@ -205,20 +172,12 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 	}
 	
 	// Output graphics
-
 	double width = URWindow.m_x - LLWindow.m_x;
 	double height = URWindow.m_y - LLWindow.m_y;
 	double multX = winX / width;
 	double multY = winY / height;
 
 	PrintManager printMan(LLWindow, URWindow, multX, multY, winWidth, winHeight, &hdc);
-
-	// Assignment #4's vector representation
-	//inputPolyline.print(printMan);
-	//inputPolyline.printPolygon(printMan);
-
-	// Test raster data output.
-	//printMan.PrintRasterGrid(-500, -500, 500, 500, my2DVector, &printMan.m_seeThroughBlue);
 
 	for(unsigned int i = 0; i < layers.size(); i++)
 	{
@@ -229,30 +188,6 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 
 		switch(layers[i].layerNumber)
 		{
-		case 1:
-		{
-			if(inputRasterized.get() != NULL)
-			{
-				inputRasterized->printRasterImage(printMan, 1);
-			}
-			break;
-		}
-		case 2:
-		{
-			if(inputRasterized.get() != NULL)
-			{
-				inputRasterized->printRasterImage(printMan, 2);
-			}
-			break;
-		}
-		case 3:
-		{
-			if(inputRasterized.get() != NULL)
-			{
-				inputRasterized->printRasterImage(printMan, 3);
-			}
-			break;
-		}
 		case 4:
 		{
 			myGMLFile.print(printMan);
@@ -305,31 +240,6 @@ void getLines(std::ifstream &stream, std::vector<std::string> & lines)
 	assert(lines.size() > 0);
 }
 
-void getInput(dnl::Polyline & output)
-{
-	// Read lines into memory
-	std::vector<std::string> lines;
-	std::ifstream myFileStream("A4.txt");
-	getLines(myFileStream, lines);
-
-	// Parse lines
-	for(unsigned int i = 0; i < lines.size(); i++)
-	{
-		std::stringstream lineStream(lines[i]);
-		
-		int index;
-		int xVal;
-		int yVal;
-
-		lineStream >> index >> xVal >> yVal;
-
-		output.addPoint(dnl::Point(xVal, yVal));
-	}
-
-	// close polygon
-	output.addPoint(output.m_points[0]);
-}
-
 int APIENTRY _tWinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
                      LPTSTR    lpCmdLine,
@@ -342,10 +252,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	//string filename("test1_pentagon.gml"); 
 	//string filename("test2_square.gml"); 
 	//string filename("test3_noAreaLine1.gml"); 
-	string filename("test4_disjointPolygons.gml");  
-	//string filename("northAmericanRoadsGML1.gml");
+	//string filename("test3_noAreaLine2.gml"); 
+	//string filename("test3_noAreaLine3.gml");   
+	//string filename("test3_noAreaLine4.gml");   
+	//string filename("test4_disjointPolygons.gml");  
+	string filename("northAmericanRoadsGML1.gml");
 	//string filename("newhampshire_areawater.gml");
 	//string filename("vermont_roads.gml");
+	//string filename("northAmericanHydroGML1.gml");
 	bool success = myGMLFile.parse(filename);
 	if(!success)
 	{
@@ -377,48 +291,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		ReportError("Unable to create edgeMap: " + filename2);
 	}*/
 
-	layers.push_back(Layer("Raster Boundary", 1, false));
-	layers.push_back(Layer("Raster Image", 2, false));
-	layers.push_back(Layer("Raster Polygon", 3, false));
 	layers.push_back(Layer("GMLFile: " + filename, 4, false));
 	//layers.push_back(Layer("GMLFile: " + filename2, 5, false));
 	layers.push_back(Layer("EdgeMap: " + filename, 6, false));
 	//layers.push_back(Layer("EdgeMap: " + filename2, 7, true));
 	layers.push_back(Layer("DCEL Lines: " + filename, 8, true));
 	layers.push_back(Layer("DCEL Areas: " + filename, 9, true));
-
-	// Get input
-	getInput(inputPolyline);
-	inputRasterized.reset(new RasterImage(64,64, inputPolyline));
-	//inputRasterized.reset(new RasterImage(256,256, inputPolyline));
-
-	int testArray[10][10] = 
-	{
-		{0,0,0,0,0,0,0,0,0,0},
-		{0,1,1,1,1,1,1,0,0,0},
-		{0,1,0,0,0,0,0,1,0,0},
-		{0,1,0,1,0,0,0,0,1,0},
-		{0,1,0,1,0,0,0,0,1,0},
-		{0,1,0,1,0,0,0,0,1,0},
-		{0,1,0,1,1,1,0,0,1,0},
-		{0,1,0,0,0,0,0,1,0,0},
-		{0,1,1,1,1,1,1,0,0,0},
-		{0,0,0,0,0,0,0,0,0,0}
-	};
-
-	// convert and put into my2DVector
-	for(int i = 0; i < 10; i++)
-	{
-		std::vector<int> my1DVector;
-		for(int j = 0; j < 10; j++)
-		{
-			my1DVector.push_back(testArray[i][j]);
-		}
-		my2DVector.push_back(my1DVector);
-	}
-
-	RunLengthCoding rlc(my2DVector);
-	rlc.output();
 
 	HACCEL				hAccelTable;
 	HWND                hWnd;
@@ -476,11 +354,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	const double width = (windowRect.right - windowRect.left);
 	const double height = (windowRect.bottom - windowRect.top);
-
-	//LLWindow.m_x = 0 - (width / 2);
-	//LLWindow.m_y = 0 - (height / 2);
-	//URWindow.m_x = LLWindow.m_x + width;
-	//URWindow.m_y = LLWindow.m_y + height;
 
 	// Centre window on GML file boundaries
 	{

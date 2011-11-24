@@ -12,7 +12,7 @@
   </gml:boundedBy>                         
   <gml:featureMember>
     <ogr:road_l fid="F0">
-      <ogr:geometryProperty><gml:LineString><gml:coordinates>44,66 45,66 45,67 44,67</gml:coordinates></gml:LineString></ogr:geometryProperty>
+      <ogr:geometryProperty><gml:LineString><gml:coordinates>44,67 45,67 45,66 45,65 45,64 46,64</gml:coordinates></gml:LineString></ogr:geometryProperty>
       <ogr:ROAD_L_>1</ogr:ROAD_L_>
       <ogr:UIDENT>183104</ogr:UIDENT>
       <ogr:TYPE>2</ogr:TYPE>
@@ -21,7 +21,7 @@
   </gml:featureMember>
   <gml:featureMember>
     <ogr:road_l fid="F0">
-      <ogr:geometryProperty><gml:LineString><gml:coordinates>44,65 45,65 45,64</gml:coordinates></gml:LineString></ogr:geometryProperty>
+      <ogr:geometryProperty><gml:LineString><gml:coordinates>46,67 46,66 46,65 46,64 47,64</gml:coordinates></gml:LineString></ogr:geometryProperty>
       <ogr:ROAD_L_>1</ogr:ROAD_L_>
       <ogr:UIDENT>183104</ogr:UIDENT>
       <ogr:TYPE>2</ogr:TYPE>
@@ -30,7 +30,7 @@
   </gml:featureMember>
   <gml:featureMember>
     <ogr:road_l fid="F0">
-      <ogr:geometryProperty><gml:LineString><gml:coordinates>46,64 46,65 47,65</gml:coordinates></gml:LineString></ogr:geometryProperty>
+      <ogr:geometryProperty><gml:LineString><gml:coordinates>44,66 45,66 46,66 47,66 47,65</gml:coordinates></gml:LineString></ogr:geometryProperty>
       <ogr:ROAD_L_>1</ogr:ROAD_L_>
       <ogr:UIDENT>183104</ogr:UIDENT>
       <ogr:TYPE>2</ogr:TYPE>
@@ -39,16 +39,7 @@
   </gml:featureMember>
   <gml:featureMember>
     <ogr:road_l fid="F0">
-      <ogr:geometryProperty><gml:LineString><gml:coordinates>47,66 46,66 46,67</gml:coordinates></gml:LineString></ogr:geometryProperty>
-      <ogr:ROAD_L_>1</ogr:ROAD_L_>
-      <ogr:UIDENT>183104</ogr:UIDENT>
-      <ogr:TYPE>2</ogr:TYPE>
-      <ogr:COUNTRY>FN</ogr:COUNTRY>
-    </ogr:road_l>
-  </gml:featureMember>
-  <gml:featureMember>
-    <ogr:road_l fid="F0">
-      <ogr:geometryProperty><gml:LineString><gml:coordinates>46,65 46,66 45,66 45,65 46,65</gml:coordinates></gml:LineString></ogr:geometryProperty>
+      <ogr:geometryProperty><gml:LineString><gml:coordinates>44,65 45,65 46,65 47,65 47,64</gml:coordinates></gml:LineString></ogr:geometryProperty>
       <ogr:ROAD_L_>1</ogr:ROAD_L_>
       <ogr:UIDENT>183104</ogr:UIDENT>
       <ogr:TYPE>2</ogr:TYPE>

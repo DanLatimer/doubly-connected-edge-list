@@ -9,6 +9,17 @@
 using namespace std;
 using namespace dnl;
 
+// http://softsurfer.com/Archive/algorithm_0109/algorithm_0109.htm#isLeft()
+// isLeft(): tests if a point is Left|On|Right of an infinite line.
+//    Input:  three points P0, P1, and P2
+//    Return: >0 for P2 left of the line through P0 and P1
+//            =0 for P2 on the line
+//            <0 for P2 right of the line
+float isLeft( dnl::Point P0, dnl::Point P1, dnl::Point P2 )
+{
+    return (P1.m_x - P0.m_x)*(P2.m_y - P0.m_y) - (P2.m_x - P0.m_x)*(P1.m_y - P0.m_y);
+}
+
 double get_angle(const dnl::Point &point1, const dnl::Point &point2)	
 {
 	double x1 = point1.m_x;
@@ -16,7 +27,11 @@ double get_angle(const dnl::Point &point1, const dnl::Point &point2)
 	double x2 = point2.m_x;
 	double y2 = point2.m_y;
 
-	if(x1==x2 && y1==y2) return(-1);
+	if(x1==x2 && y1==y2)
+	{
+		assert(0);
+		return(-1);
+	}
 
 	double opposite;
     double adjacent;
@@ -33,6 +48,7 @@ double get_angle(const dnl::Point &point1, const dnl::Point &point2)
     }
     else 
     {
+		//angle = opposite/adjacent;
         angle=(atan(opposite/adjacent))*180/PI;
         //the angle calculated will range from +90 degrees to -90 degrees
         //so the angle needs to be adjusted if point x1 is less or greater then x2
@@ -342,6 +358,8 @@ bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 		assert(m_edges[i].nextEdgeVertex2 != -1);
 	}
 
+	createFaces();
+
 	/*std::vector<dnl::Point> m_VERTEX;
 	
 	std::vector<Edge> m_edges;
@@ -375,8 +393,16 @@ void DoublyConnectedEdgeList::findEdgesOfFace(int theFace, std::vector< std::pai
 	bool backtrack = false;
 	while(currentEdge != firstEdge)
 	{
-		// Backtrack!
+		if(m_edges[currentEdge].face1 == m_edges[currentEdge].face2)
+		{
+			const int previousEdge = (edges.end()-1)->first;
+			if(m_edges[previousEdge].face1 != m_edges[previousEdge].face2)
+			{
+				lastDoubleFacedVertex = currentEdge;
+			}
+		}
 
+		// Backtrack!
 		if(m_edges[currentEdge].nextEdgeVertex1 == currentEdge ||
 		   m_edges[currentEdge].nextEdgeVertex2 == currentEdge)
 		{
@@ -398,18 +424,17 @@ void DoublyConnectedEdgeList::findEdgesOfFace(int theFace, std::vector< std::pai
 			continue;
 		}
 
-		
-		if(m_edges[currentEdge].face1 != m_edges[currentEdge].face2)
-		{
-			backtrack = false;
-		}
-
 		forward = (m_edges[currentEdge].face1 != theFace);
 		if(backtrack)
 		{
 			forward = !forward;
 		}
 		edges.push_back(std::pair<int, bool>(currentEdge, forward));
+
+		if(backtrack == true && m_edges[currentEdge] == m_edges[lastDoubleFacedVertex])
+		{
+			backtrack = false;
+		}
 
 		if(!forward)
 		{
@@ -452,6 +477,43 @@ void DoublyConnectedEdgeList::findEdgesOfFace(int theFace, std::vector< std::pai
 	}
 }
 
+void DoublyConnectedEdgeList::createFaces()
+{
+	for(unsigned int i = 0; i < m_firstOccuranceOfFace.size(); i++)
+	{
+		assert(m_firstOccuranceOfFace[i] != -1);
+		std::vector<std::pair<int, bool> > edgeIndicies;
+		findEdgesOfFace(i, edgeIndicies);
+
+		std::vector<dnl::Point> points;
+		for(unsigned int j = 0; j < edgeIndicies.size(); j++)
+		{
+			if(j == 0)
+			{
+				if(edgeIndicies[j].second)
+				{
+					points.push_back(m_VERTEX[m_edges[edgeIndicies[j].first].vertex1]);
+				}
+				else
+				{
+					points.push_back(m_VERTEX[m_edges[edgeIndicies[j].first].vertex2]);
+				}
+			}
+
+			if(edgeIndicies[j].second)
+			{
+				points.push_back(m_VERTEX[m_edges[edgeIndicies[j].first].vertex2]);
+			}
+			else
+			{
+				points.push_back(m_VERTEX[m_edges[edgeIndicies[j].first].vertex1]);
+			}
+		}
+
+		m_FACES.push_back(points);
+	}
+}
+
 void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 {
 	switch(printWhat)
@@ -471,38 +533,9 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 	case 2:
 	{
 		// Print Faces
-		for(unsigned int i = 0; i < m_firstOccuranceOfFace.size(); i++)
+		for(unsigned int i = 0; i < m_FACES.size(); i++)
 		{
-			assert(m_firstOccuranceOfFace[i] != -1);
-			std::vector<std::pair<int, bool> > edgeIndicies;
-			findEdgesOfFace(i, edgeIndicies);
-
-			std::vector<dnl::Point> points;
-			for(unsigned int j = 0; j < edgeIndicies.size(); j++)
-			{
-				if(j == 0)
-				{
-					if(edgeIndicies[j].second)
-					{
-						points.push_back(m_VERTEX[m_edges[edgeIndicies[j].first].vertex1]);
-					}
-					else
-					{
-						points.push_back(m_VERTEX[m_edges[edgeIndicies[j].first].vertex2]);
-					}
-				}
-
-				if(edgeIndicies[j].second)
-				{
-					points.push_back(m_VERTEX[m_edges[edgeIndicies[j].first].vertex2]);
-				}
-				else
-				{
-					points.push_back(m_VERTEX[m_edges[edgeIndicies[j].first].vertex1]);
-				}
-			}
-				
-			printMan.PrintPolygon(points, &printMan.getRandomColour(50));
+			printMan.PrintPolygon(m_FACES[i], &printMan.getRandomColour(255));
 		}
 		break;
 	}

@@ -12,7 +12,7 @@
   </gml:boundedBy>                         
   <gml:featureMember>
     <ogr:road_l fid="F0">
-      <ogr:geometryProperty><gml:LineString><gml:coordinates>42,62 42,68 48,68 48,62 42,62</gml:coordinates></gml:LineString></ogr:geometryProperty>
+      <ogr:geometryProperty><gml:LineString><gml:coordinates>42,68 43,67 45,66 46,66 46,65 45,65 45,66</gml:coordinates></gml:LineString></ogr:geometryProperty>
       <ogr:ROAD_L_>1</ogr:ROAD_L_>
       <ogr:UIDENT>183104</ogr:UIDENT>
       <ogr:TYPE>2</ogr:TYPE>

@@ -1,0 +1,35 @@
+<GMLFeatureClassList>
+  <GMLFeatureClass>
+    <Name>road_l</Name>
+    <ElementPath>road_l</ElementPath>
+    <GeometryType>2</GeometryType>
+    <DatasetSpecificInfo>
+      <FeatureCount>3</FeatureCount>
+      <ExtentXMin>42.00000</ExtentXMin>
+      <ExtentXMax>46.00000</ExtentXMax>
+      <ExtentYMin>62.00000</ExtentYMin>
+      <ExtentYMax>66.00000</ExtentYMax>
+    </DatasetSpecificInfo>
+    <PropertyDefn>
+      <Name>ROAD_L_</Name>
+      <ElementPath>ROAD_L_</ElementPath>
+      <Type>Integer</Type>
+    </PropertyDefn>
+    <PropertyDefn>
+      <Name>UIDENT</Name>
+      <ElementPath>UIDENT</ElementPath>
+      <Type>Integer</Type>
+    </PropertyDefn>
+    <PropertyDefn>
+      <Name>TYPE</Name>
+      <ElementPath>TYPE</ElementPath>
+      <Type>Integer</Type>
+    </PropertyDefn>
+    <PropertyDefn>
+      <Name>COUNTRY</Name>
+      <ElementPath>COUNTRY</ElementPath>
+      <Type>String</Type>
+      <Width>2</Width>
+    </PropertyDefn>
+  </GMLFeatureClass>
+</GMLFeatureClassList>

@@ -23,6 +23,7 @@ public:
 private:
 	bool parseFeatures(rapidxml::xml_node<> *allFeatures);
 	bool parseFeature(rapidxml::xml_node<> *currentFeature);
+	bool parseLineStringTAG(const std::string &featureName, rapidxml::xml_node<> *node);
 	bool parseRing(rapidxml::xml_node<> *ringNode, dnl::Polyline &ring);
 
 	bool createBoundingBox(dnl::Point &llBox, dnl::Point &urBox);

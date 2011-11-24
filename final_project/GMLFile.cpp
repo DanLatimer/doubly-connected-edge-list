@@ -23,6 +23,8 @@ const static string TAG_FeatureCollection("ogr:FeatureCollection");
 // Feature Tags
 const static string TAG_FeatureMember("gml:featureMember");
 const static string TAG_GeometryProperty("ogr:geometryProperty");
+const static string TAG_MultiLineString("gml:MultiLineString");
+const static string TAG_LineStringMember("gml:lineStringMember");
 const static string TAG_LineString("gml:LineString");
 const static string TAG_Coordinates("gml:coordinates");
 const static string TAG_Fullname("ogr:FULLNAME");
@@ -202,6 +204,27 @@ bool GMLFile::parseRing(xml_node<> *ringNode, dnl::Polyline &ring)
 	return true;
 }
 
+bool GMLFile::parseLineStringTAG(const string &featureName, xml_node<> *node)
+{
+		xml_node<> *coordinates = node->first_node(TAG_Coordinates.c_str());
+		if(coordinates == NULL)
+		{
+			ReportError("gml:LineString must contain at a gml:coordinates node.");
+			return false;
+		}
+
+		dnl::Polyline line(featureName);
+		const bool success = parseLineString(coordinates->value(), line);
+		if(!success)
+		{
+			ReportError("Did not successfully parseLineString(coordinates->value(), line)");
+			return false;
+		}
+
+		m_lines.push_back(line);
+		return true;
+}
+
 bool GMLFile::parseFeature(xml_node<> *currentFeature)
 {
 	if(currentFeature == NULL)
@@ -245,22 +268,29 @@ bool GMLFile::parseFeature(xml_node<> *currentFeature)
 	string geometryTagName = geometry->name();
 	if(geometryTagName == TAG_LineString)
 	{
-		xml_node<> *coordinates = geometry->first_node(TAG_Coordinates.c_str());
-		if(coordinates == NULL)
-		{
-			ReportError("gml:LineString must contain at a gml:coordinates node.");
-			return false;
-		}
-
-		dnl::Polyline line(featureName);
-		const bool success = parseLineString(coordinates->value(), line);
+		bool success = GMLFile::parseLineStringTAG(featureName, geometry);
 		if(!success)
 		{
-			ReportError("Did not successfully parseLineString(coordinates->value(), line)");
 			return false;
 		}
-
-		m_lines.push_back(line);
+	}
+	else if(geometryTagName == TAG_MultiLineString)
+	{
+		xml_node<> *lineStringMember = geometry->first_node(TAG_LineStringMember.c_str());
+		if(lineStringMember == NULL)
+		{
+			ReportError("gml:MultiLineString must contain at a gml:lineStringMember node.");
+			return false;
+		}
+		while(lineStringMember != NULL)
+		{
+			bool success = GMLFile::parseLineStringTAG(featureName, lineStringMember->first_node());
+			if(!success)
+			{
+				return false;
+			}
+			lineStringMember = lineStringMember->next_sibling();
+		}
 	}
 	else if(geometryTagName == TAG_Polygon)
 	{

@@ -56,6 +56,13 @@ private:
 	bool constructFaceCycles();
 	bool findEdgesOfFace(int faceIndex, std::vector< std::pair<int, bool> > &edges);
 	void createFaces();
+	int findNextNonDangle(
+		const int theFace, 
+		const int currentEdge, 
+		std::map<int, bool> &edgesChecked,
+		const std::vector< std::pair<int, bool> > &edges);
+	void bruteForcePrintFace(PrintManager &printMan, int faceNum);
+	bool isPolygonClosed(const std::vector< std::pair<int, bool> > &edges);
 
 	// Data
 	std::vector<dnl::Point> m_VERTEX;

@@ -7,6 +7,7 @@
 #include <cmath>
 
 #include <sstream>
+#include <map>
 
 using namespace std;
 using namespace dnl;
@@ -372,10 +373,110 @@ bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 	return true;
 }
 
+bool isEdgeInVector(const std::vector< std::pair<int, bool> > &edges, int edge)
+{
+	for(unsigned int i = 0; i < edges.size(); i++)
+	{
+		if(edges[i].first == edge)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+int DoublyConnectedEdgeList::findNextNonDangle(
+	const int theFace, 
+	const int currentEdge, 
+	std::map<int, bool> &edgesChecked,
+	const std::vector< std::pair<int, bool> > &edges)
+{
+	const Edge &current = m_edges[currentEdge];
+	if(current.nextEdgeVertex1 == currentEdge || current.nextEdgeVertex2 == currentEdge)
+	{
+		return -1;
+	}
+
+	if(current.face1 != current.face2)
+	{
+		// Check that it isn't already in the edgelist
+		bool alreadyInEdgeList = isEdgeInVector(edges, currentEdge);
+		if(!alreadyInEdgeList)
+		{
+			return currentEdge;
+		}
+	}
+	
+	// Check nextEdgeVertex2 if we haven't yet checked it
+	if(current.face1 == theFace)
+	{
+		const int nextEdgeV1 = m_edges[currentEdge].nextEdgeVertex1;
+		std::map<int, bool>::iterator iter = edgesChecked.find(nextEdgeV1);
+		if(iter == edgesChecked.end())
+		{
+			edgesChecked[nextEdgeV1] = true;
+			int result = findNextNonDangle(theFace, nextEdgeV1, edgesChecked, edges);
+			if(result != -1)
+			{
+				return result;
+			}
+		}
+	}
+
+	// Check nextEdgeVertex2 if we haven't yet checked it
+	if(current.face2 == theFace)
+	{
+		const int nextEdgeV2 = m_edges[currentEdge].nextEdgeVertex2;
+		std::map<int, bool>::iterator iter = edgesChecked.find(nextEdgeV2);
+		if(iter == edgesChecked.end())
+		{
+			edgesChecked[nextEdgeV2] = true;
+			int result = findNextNonDangle(theFace, nextEdgeV2, edgesChecked, edges);
+			if(result != -1)
+			{
+				return result;
+			}
+		}
+	}
+
+	return -1;
+}
+
+bool DoublyConnectedEdgeList::isPolygonClosed(const std::vector< std::pair<int, bool> > &edges)
+{
+	if(edges.size() < 3)
+	{
+		return false;
+	}
+
+	int firstVertex;
+	if(edges.begin()->second)
+	{
+		firstVertex = m_edges[edges.begin()->first].vertex1;
+	}
+	else
+	{
+		firstVertex = m_edges[edges.begin()->first].vertex2;
+	}
+
+	int lastVertex;
+	if((edges.end()-1)->second)
+	{
+		lastVertex = m_edges[(edges.end()-1)->first].vertex2;
+	}
+	else
+	{
+		lastVertex = m_edges[(edges.end()-1)->first].vertex1;
+	}
+
+	return firstVertex == lastVertex;
+}
+
 bool DoublyConnectedEdgeList::findEdgesOfFace(int theFace, std::vector< std::pair<int, bool> > &edges)
 {
 	int currentEdge = m_firstOccuranceOfFace[theFace]; //a
 	int firstEdge = currentEdge; //a0
+	std::vector<int> edgeStack;
 
 	bool forward = (m_edges[currentEdge].face1 != theFace);
 	edges.push_back(std::pair<int, bool>(currentEdge, forward));
@@ -391,14 +492,26 @@ bool DoublyConnectedEdgeList::findEdgesOfFace(int theFace, std::vector< std::pai
 		currentEdge = m_edges[currentEdge].nextEdgeVertex2;
 	}
 
+	bool backtrack = false;
 	while(currentEdge != firstEdge)
 	{
 		// Never enter an edge that has the same face on both sides, look for alternative
-		/*if(m_edges[currentEdge].face1 == m_edges[currentEdge].face2) 
+		if(m_edges[currentEdge].face1 == m_edges[currentEdge].face2) 
 		{
-			return false;
-		}*/
-
+			//return false;
+			std::map<int, bool> edgesChecked;
+			currentEdge = findNextNonDangle(theFace, currentEdge, edgesChecked, edges);
+			if(currentEdge == -1)
+			{
+				bool closedPolygon = isPolygonClosed(edges);
+				if(closedPolygon)
+				{
+					return true;
+				}
+				return false;
+			}
+		}
+		
 		forward = (m_edges[currentEdge].face1 != theFace);
 		edges.push_back(std::pair<int, bool>(currentEdge, forward));
 
@@ -491,8 +604,49 @@ void DoublyConnectedEdgeList::createFaces()
 	}
 }
 
+void DoublyConnectedEdgeList::bruteForcePrintFace(PrintManager &printMan, int faceNum)
+{
+	// Find all edges of face faceNum
+	for(unsigned int i = 0; i < m_edges.size(); i++)
+	{
+		if(m_edges[i].face1 == faceNum || m_edges[i].face2 == faceNum)
+		{
+			dnl::Point vertex1 = m_VERTEX[m_edges[i].vertex1];
+			dnl::Point vertex2 = m_VERTEX[m_edges[i].vertex2];
+			Colour theColour(255,80,80,80);
+			if(m_edges[i].face1 == faceNum && m_edges[i].face2 == faceNum)
+			{
+				theColour = printMan.m_solidRed;
+			}
+			else if(m_edges[i].face2 == faceNum)
+			{
+				theColour = printMan.m_solidGreen;
+			}
+			else
+			{
+				theColour = printMan.m_solidBlue;
+			}
+
+			printMan.PrintLine(vertex1, vertex2, &theColour);
+
+			// Print directional arrow
+			printMan.PrintArrow(vertex1, vertex2, 0.01);
+
+			// Print Edge names
+			char text[100] = "E";
+			itoa(i, text + 1, 10);
+			dnl::Point textPoint((vertex1.m_x + vertex2.m_x)/2, (vertex1.m_y + vertex2.m_y)/2); 
+			printMan.PrintText(textPoint, text, 0.25);
+
+		}
+	}
+}
+
 void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 {
+	// Brute Force Print faces
+
+	//bruteForcePrintFace(printMan, 694);
 	switch(printWhat)
 	{
 	case 1:
@@ -507,20 +661,20 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 
 #ifdef _DEBUG
 			// Print directional arrow
-			printMan.PrintArrow(vertex1, vertex2, 0.01);
+			//printMan.PrintArrow(vertex1, vertex2, 0.01);
 
 			// Print Edge names
-			char text[100] = "E";
+			/*char text[100] = "E";
 			itoa(i, text + 1, 10);
 			dnl::Point textPoint((vertex1.m_x + vertex2.m_x)/2, (vertex1.m_y + vertex2.m_y)/2); 
 			printMan.PrintText(textPoint, text, 0.25);
-
+*/
 #endif
 		}
 
 #ifdef _DEBUG
 		// Print Verticies
-		char text[100] = "V";
+		/*char text[100] = "V";
 		for(unsigned int i = 0; i < m_VERTEX.size(); i++)
 		{
 			itoa(i, text + 1, 10);
@@ -556,7 +710,7 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 			info << "]" << std::endl;
 		}
 
-		printMan.PrintScreenText(info, dnl::Point(300,20));
+		printMan.PrintScreenText(info, dnl::Point(300,20));*/
 
 #endif
 
@@ -577,4 +731,5 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 			break;
 		}
 	}
+	
 }

@@ -244,7 +244,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	//string filename("test3_noAreaLine8.gml");
 	//string filename("test3_noAreaLine9.gml");
 	//string filename("test4_disjointPolygons.gml");  
-	string filename("northAmericanRoadsGML1.gml"); 
+	//string filename("northAmericanRoadsGML1.gml");
+	string filename("NorthAmerica.gml");
+	
 	//string filename("newhampshire_areawater.gml");
 	//string filename("vermont_roads.gml");
 	//string filename("northAmericanHydroGML1.gml");

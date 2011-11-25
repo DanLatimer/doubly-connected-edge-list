@@ -9,6 +9,7 @@
 #include <sstream>
 #include <fstream>
 #include <map>
+#include <queue>
 
 using namespace std;
 using namespace dnl;
@@ -24,7 +25,7 @@ float isLeft( dnl::Point P0, dnl::Point P1, dnl::Point P2 )
     return (P1.m_x - P0.m_x)*(P2.m_y - P0.m_y) - (P2.m_x - P0.m_x)*(P1.m_y - P0.m_y);
 }
 
-double get_angle(const dnl::Point &point1, const dnl::Point &point2)	
+/*double get_angle(const dnl::Point &point1, const dnl::Point &point2)	
 {
 	double x1 = point1.m_x;
 	double y1 = point1.m_y;
@@ -66,6 +67,14 @@ double get_angle(const dnl::Point &point1, const dnl::Point &point2)
         }
     } 
     return angle;
+}*/
+
+double DiamondAngle(double x, double y)
+{
+    if (y >= 0)
+        return (x >= 0) ? y/(x+y) : 1-x/(-x+y);
+    else
+        return (x < 0) ? 2-y/(-x-y) : 3+x/(x-y);
 }
 
 
@@ -212,7 +221,10 @@ void DoublyConnectedEdgeList::addEdgesForVertex(const VertexEdgeMap &vertexEdgeM
 	for(unsigned int i = 0; i < edgesOnVertex.size(); i++)
 	{
 		const dnl::Point &vertex2 = m_VERTEX[edgesOnVertex[i]];
-		const double angle = get_angle(vertex, vertex2);
+		//const double angle = get_angle(vertex, vertex2);
+
+		const double angle = 
+			DiamondAngle(vertex2.m_x - vertex.m_x, vertex2.m_y - vertex.m_y);
 
 		angles.push_back(std::pair<double, int> (angle, edgesOnVertex[i]));
 	}
@@ -381,60 +393,62 @@ bool isEdgeInVector(const std::vector< std::pair<int, bool> > &edges, int edge)
 
 int DoublyConnectedEdgeList::findNextNonDangle(
 	const int theFace, 
-	const int currentEdge, 
+	int currentEdge, 
 	std::map<int, bool> &edgesChecked,
 	const std::vector< std::pair<int, bool> > &edges)
 {
-	const Edge &current = m_edges[currentEdge];
-	if((current.nextEdgeVertex1 == currentEdge || 
-	   current.nextEdgeVertex2 == currentEdge) &&
-	   edgesChecked.size() > 0)
-	{
-		return -1;
-	}
+	std::queue<int> edgeQueue;
 
-	if(current.face1 != current.face2)
+	edgeQueue.push(currentEdge);
+
+	while(!edgeQueue.empty())
 	{
-		// Check that it isn't already in the edgelist
-		bool alreadyInEdgeList = isEdgeInVector(edges, currentEdge);
-		if(!alreadyInEdgeList)
+		currentEdge = edgeQueue.front();
+		edgeQueue.pop();
+
+		const Edge &current = m_edges[currentEdge];
+		if((current.nextEdgeVertex1 == currentEdge || 
+		   current.nextEdgeVertex2 == currentEdge) &&
+		   edgesChecked.size() > 0)
 		{
-			return currentEdge;
+			return -1;
 		}
-	}
-	
-	// Check nextEdgeVertex2 if we haven't yet checked it
-	if(current.face1 == theFace)
-	{
-		const int nextEdgeV1 = m_edges[currentEdge].nextEdgeVertex1;
-		std::map<int, bool>::iterator iter = edgesChecked.find(nextEdgeV1);
-		if(iter == edgesChecked.end())
+
+		if(current.face1 != current.face2)
 		{
-			edgesChecked[nextEdgeV1] = true;
-			int result = findNextNonDangle(theFace, nextEdgeV1, edgesChecked, edges);
-			if(result != -1)
+			// Check that it isn't already in the edgelist
+			bool alreadyInEdgeList = isEdgeInVector(edges, currentEdge);
+			if(!alreadyInEdgeList)
 			{
-				return result;
+				return currentEdge;
 			}
 		}
-	}
-
-	// Check nextEdgeVertex2 if we haven't yet checked it
-	if(current.face2 == theFace)
-	{
-		const int nextEdgeV2 = m_edges[currentEdge].nextEdgeVertex2;
-		std::map<int, bool>::iterator iter = edgesChecked.find(nextEdgeV2);
-		if(iter == edgesChecked.end())
+		
+		// Check nextEdgeVertex2 if we haven't yet checked it
+		if(current.face1 == theFace)
 		{
-			edgesChecked[nextEdgeV2] = true;
-			int result = findNextNonDangle(theFace, nextEdgeV2, edgesChecked, edges);
-			if(result != -1)
+			const int nextEdgeV1 = m_edges[currentEdge].nextEdgeVertex1;
+			std::map<int, bool>::iterator iter = edgesChecked.find(nextEdgeV1);
+			if(iter == edgesChecked.end())
 			{
-				return result;
+				edgesChecked[nextEdgeV1] = true;
+				edgeQueue.push(nextEdgeV1);
 			}
 		}
-	}
 
+		// Check nextEdgeVertex2 if we haven't yet checked it
+		if(current.face2 == theFace)
+		{
+			const int nextEdgeV2 = m_edges[currentEdge].nextEdgeVertex2;
+			std::map<int, bool>::iterator iter = edgesChecked.find(nextEdgeV2);
+			if(iter == edgesChecked.end())
+			{
+				edgesChecked[nextEdgeV2] = true;
+				edgeQueue.push(nextEdgeV2);
+			}
+		}
+
+	}
 	return -1;
 }
 
@@ -613,14 +627,14 @@ void DoublyConnectedEdgeList::bruteForcePrintFace(PrintManager &printMan, int fa
 			printMan.PrintLine(vertex1, vertex2, &theColour, 15);
 
 			// Print directional arrow
-			printMan.PrintArrow(vertex1, vertex2, 0.01);
+			//printMan.PrintArrow(vertex1, vertex2, 0.01);
 
 			// Print Edge names
-			char text[100] = "E";
+			/*char text[100] = "E";
 			itoa(i, text + 1, 10);
 			dnl::Point textPoint((vertex1.m_x + vertex2.m_x)/2, (vertex1.m_y + vertex2.m_y)/2); 
 			printMan.PrintText(textPoint, text, 0.25);
-
+*/
 		}
 	}
 	centroid.m_x = centroid.m_x / numberOfVerticies;
@@ -635,75 +649,8 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 {
 	// Brute Force Print faces
 	
-	bruteForcePrintFace(printMan, 5);
-	bruteForcePrintFace(printMan, 6);
-	bruteForcePrintFace(printMan, 8);
-	bruteForcePrintFace(printMan, 9);
-	bruteForcePrintFace(printMan, 11);
-	bruteForcePrintFace(printMan, 14);
-	bruteForcePrintFace(printMan, 15);
-	bruteForcePrintFace(printMan, 16);
-	bruteForcePrintFace(printMan, 18);
-	bruteForcePrintFace(printMan, 22);
-	bruteForcePrintFace(printMan, 24);
-	bruteForcePrintFace(printMan, 27);
-	bruteForcePrintFace(printMan, 50);
-	bruteForcePrintFace(printMan, 54);
-	bruteForcePrintFace(printMan, 61);
-	bruteForcePrintFace(printMan, 67);
-	bruteForcePrintFace(printMan, 81);
-	bruteForcePrintFace(printMan, 99);
-	bruteForcePrintFace(printMan, 117);
-	bruteForcePrintFace(printMan, 147);
-	bruteForcePrintFace(printMan, 151);
-	bruteForcePrintFace(printMan, 166);
-	bruteForcePrintFace(printMan, 172);
-	bruteForcePrintFace(printMan, 179);
-	bruteForcePrintFace(printMan, 198);
-	bruteForcePrintFace(printMan, 220);
-	bruteForcePrintFace(printMan, 402);
-	bruteForcePrintFace(printMan, 668);
-	bruteForcePrintFace(printMan, 686);
-	bruteForcePrintFace(printMan, 694);
-	bruteForcePrintFace(printMan, 696);
-	bruteForcePrintFace(printMan, 708);
-	bruteForcePrintFace(printMan, 718);
-	bruteForcePrintFace(printMan, 783);
-	bruteForcePrintFace(printMan, 835);
-	bruteForcePrintFace(printMan, 840);
-	bruteForcePrintFace(printMan, 841);
-	bruteForcePrintFace(printMan, 848);
-	bruteForcePrintFace(printMan, 849);
-	bruteForcePrintFace(printMan, 851);
-	bruteForcePrintFace(printMan, 853);
-	bruteForcePrintFace(printMan, 908);
-	bruteForcePrintFace(printMan, 922);
-	bruteForcePrintFace(printMan, 928);
-	bruteForcePrintFace(printMan, 933);
-	bruteForcePrintFace(printMan, 948);
-	bruteForcePrintFace(printMan, 949);
-	bruteForcePrintFace(printMan, 951);
-	bruteForcePrintFace(printMan, 956);
-	bruteForcePrintFace(printMan, 1022);
-	bruteForcePrintFace(printMan, 1023);
-	bruteForcePrintFace(printMan, 1024);
-	bruteForcePrintFace(printMan, 1026);
-	bruteForcePrintFace(printMan, 1027);
-	bruteForcePrintFace(printMan, 1028);
-	bruteForcePrintFace(printMan, 1030);
-	bruteForcePrintFace(printMan, 1033);
-	bruteForcePrintFace(printMan, 1035);
-	bruteForcePrintFace(printMan, 1039);
-	bruteForcePrintFace(printMan, 1041);
-	bruteForcePrintFace(printMan, 1043);
-	bruteForcePrintFace(printMan, 1045);
-	bruteForcePrintFace(printMan, 1047);
-	bruteForcePrintFace(printMan, 1049);
-	bruteForcePrintFace(printMan, 1051);
-	bruteForcePrintFace(printMan, 1053);
-	bruteForcePrintFace(printMan, 1055);
-	bruteForcePrintFace(printMan, 1057);
-	bruteForcePrintFace(printMan, 1059);
+	/*bruteForcePrintFace(printMan, 5);
+	bruteForcePrintFace(printMan, 1059);*/
 
 	switch(printWhat)
 	{
@@ -725,8 +672,8 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 			/*char text[100] = "E";
 			itoa(i, text + 1, 10);
 			dnl::Point textPoint((vertex1.m_x + vertex2.m_x)/2, (vertex1.m_y + vertex2.m_y)/2); 
-			printMan.PrintText(textPoint, text, 0.25);
-*/
+			printMan.PrintText(textPoint, text, 0.25);*/
+
 #endif
 		}
 

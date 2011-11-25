@@ -18,7 +18,6 @@ public:
 
 	void print(PrintManager &printMan);
 
-private:
 	std::string m_name;
 	dnl::Polyline m_outerRing;
 	std::vector<dnl::Polyline> m_innerRings;

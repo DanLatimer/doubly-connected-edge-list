@@ -58,7 +58,7 @@ private:
 	void createFaces();
 	int findNextNonDangle(
 		const int theFace, 
-		const int currentEdge, 
+		int currentEdge, 
 		std::map<int, bool> &edgesChecked,
 		const std::vector< std::pair<int, bool> > &edges);
 	void bruteForcePrintFace(PrintManager &printMan, int faceNum);

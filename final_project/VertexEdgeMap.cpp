@@ -69,6 +69,46 @@ bool VertexEdgeMap::construct(GMLFile *gmlFile)
 			previousVertexIndex = vertexIndex;
 		}
 	}
+
+	// Process GMLFile's areas
+	for(unsigned int i = 0; i < gmlFile->m_areas.size(); i++)
+	{
+		// Process a line;
+		const dnl::Polygon &currentPolygon = gmlFile->m_areas[i];
+
+		const dnl::Polyline &outerRing = currentPolygon.m_outerRing;
+
+		int previousVertexIndex = -1;
+		for(unsigned int j = 0; j < outerRing.m_points.size(); j++)
+		{
+			const dnl::Point &currentPoint = outerRing.m_points[j];
+			
+			const int vertexIndex = getVertexIndex(currentPoint);
+			if(previousVertexIndex == -1)
+			{
+				previousVertexIndex = vertexIndex;
+				continue;
+			}
+			
+			if(previousVertexIndex == vertexIndex)
+			{
+				// Don't add edges from a vertex to itself
+				continue;
+			}
+
+			// Add more vectors as needed.
+			for(unsigned int i = m_edges.size(); i <= vertexIndex || i <= previousVertexIndex; i++)
+			{
+				std::vector<int> oneDVector;
+				m_edges.push_back(oneDVector);
+			}
+
+			m_edges[previousVertexIndex].push_back(vertexIndex);
+			m_edges[vertexIndex].push_back(previousVertexIndex);
+
+			previousVertexIndex = vertexIndex;
+		}
+	}
 	return true;
 }
 

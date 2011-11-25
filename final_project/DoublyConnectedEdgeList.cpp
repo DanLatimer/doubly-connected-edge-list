@@ -7,6 +7,7 @@
 #include <cmath>
 
 #include <sstream>
+#include <fstream>
 #include <map>
 
 using namespace std;
@@ -363,13 +364,6 @@ bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 
 	createFaces();
 
-	/*std::vector<dnl::Point> m_VERTEX;
-	
-	std::vector<Edge> m_edges;
-	std::vector<int> m_firstOccuranceOfVertex;
-
-	std::vector<int> m_firstEdgeInFace;
-	std::vector<EdgeCycleEntry> m_edgeCycles;*/
 	return true;
 }
 
@@ -392,7 +386,9 @@ int DoublyConnectedEdgeList::findNextNonDangle(
 	const std::vector< std::pair<int, bool> > &edges)
 {
 	const Edge &current = m_edges[currentEdge];
-	if(current.nextEdgeVertex1 == currentEdge || current.nextEdgeVertex2 == currentEdge)
+	if((current.nextEdgeVertex1 == currentEdge || 
+	   current.nextEdgeVertex2 == currentEdge) &&
+	   edgesChecked.size() > 0)
 	{
 		return -1;
 	}
@@ -525,40 +521,15 @@ bool DoublyConnectedEdgeList::findEdgesOfFace(int theFace, std::vector< std::pai
 			// Positive Edge?
 			currentEdge = m_edges[currentEdge].nextEdgeVertex2;
 		}
-
-
-		// Follow the lines
-		/*
-		if(currentEdge == (edges.end()-1)->first)
-		{
-			forward = !forward;	
-		}
-		else
-		{
-			if(m_edges[currentEdge].face1 != m_edges[currentEdge].face2)
-			{
-				forward = (m_edges[currentEdge].face1 != faceIndex);
-			}
-			edges.push_back(std::pair<int, bool>(currentEdge, forward));
-		}
-
-		if(!forward)
-		{
-			// Negative Edge?
-			currentEdge = m_edges[currentEdge].nextEdgeVertex1;
-		}
-		else
-		{
-			// Positive Edge?
-			currentEdge = m_edges[currentEdge].nextEdgeVertex2;
-		}
-		*/
 	}
 	return true;
 }
 
 void DoublyConnectedEdgeList::createFaces()
 {
+	ofstream myfile;
+	myfile.open ("final_project_null_faces.txt");
+
 	for(unsigned int i = 0; i < m_firstOccuranceOfFace.size(); i++)
 	{
 		assert(m_firstOccuranceOfFace[i] != -1);
@@ -570,8 +541,12 @@ void DoublyConnectedEdgeList::createFaces()
 		if(!success)
 		{
 			m_FACES.push_back(points);
+
 			std::vector<std::pair<int, bool> > failed;
 			m_FACEEdges.push_back(failed);
+
+			myfile << i << std::endl;
+
 			continue;
 		}
 		m_FACEEdges.push_back(edgeIndicies);
@@ -602,17 +577,25 @@ void DoublyConnectedEdgeList::createFaces()
 
 		m_FACES.push_back(points);
 	}
+	myfile.close();
 }
 
 void DoublyConnectedEdgeList::bruteForcePrintFace(PrintManager &printMan, int faceNum)
 {
 	// Find all edges of face faceNum
+	int numberOfVerticies = 0;
+	dnl::Point centroid(0,0);
 	for(unsigned int i = 0; i < m_edges.size(); i++)
 	{
 		if(m_edges[i].face1 == faceNum || m_edges[i].face2 == faceNum)
 		{
 			dnl::Point vertex1 = m_VERTEX[m_edges[i].vertex1];
 			dnl::Point vertex2 = m_VERTEX[m_edges[i].vertex2];
+
+			centroid.m_x += vertex1.m_x + vertex2.m_x;
+			centroid.m_y += vertex1.m_y + vertex2.m_y;
+			numberOfVerticies += 2;
+
 			Colour theColour(255,80,80,80);
 			if(m_edges[i].face1 == faceNum && m_edges[i].face2 == faceNum)
 			{
@@ -627,7 +610,7 @@ void DoublyConnectedEdgeList::bruteForcePrintFace(PrintManager &printMan, int fa
 				theColour = printMan.m_solidBlue;
 			}
 
-			printMan.PrintLine(vertex1, vertex2, &theColour);
+			printMan.PrintLine(vertex1, vertex2, &theColour, 15);
 
 			// Print directional arrow
 			printMan.PrintArrow(vertex1, vertex2, 0.01);
@@ -640,13 +623,88 @@ void DoublyConnectedEdgeList::bruteForcePrintFace(PrintManager &printMan, int fa
 
 		}
 	}
+	centroid.m_x = centroid.m_x / numberOfVerticies;
+	centroid.m_y = centroid.m_y / numberOfVerticies;
+	char text[100] = "F";
+	itoa(faceNum, text + 1, 10);
+	printMan.PrintText(centroid, text, 0.25);
+
 }
 
 void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 {
 	// Brute Force Print faces
+	
+	bruteForcePrintFace(printMan, 5);
+	bruteForcePrintFace(printMan, 6);
+	bruteForcePrintFace(printMan, 8);
+	bruteForcePrintFace(printMan, 9);
+	bruteForcePrintFace(printMan, 11);
+	bruteForcePrintFace(printMan, 14);
+	bruteForcePrintFace(printMan, 15);
+	bruteForcePrintFace(printMan, 16);
+	bruteForcePrintFace(printMan, 18);
+	bruteForcePrintFace(printMan, 22);
+	bruteForcePrintFace(printMan, 24);
+	bruteForcePrintFace(printMan, 27);
+	bruteForcePrintFace(printMan, 50);
+	bruteForcePrintFace(printMan, 54);
+	bruteForcePrintFace(printMan, 61);
+	bruteForcePrintFace(printMan, 67);
+	bruteForcePrintFace(printMan, 81);
+	bruteForcePrintFace(printMan, 99);
+	bruteForcePrintFace(printMan, 117);
+	bruteForcePrintFace(printMan, 147);
+	bruteForcePrintFace(printMan, 151);
+	bruteForcePrintFace(printMan, 166);
+	bruteForcePrintFace(printMan, 172);
+	bruteForcePrintFace(printMan, 179);
+	bruteForcePrintFace(printMan, 198);
+	bruteForcePrintFace(printMan, 220);
+	bruteForcePrintFace(printMan, 402);
+	bruteForcePrintFace(printMan, 668);
+	bruteForcePrintFace(printMan, 686);
+	bruteForcePrintFace(printMan, 694);
+	bruteForcePrintFace(printMan, 696);
+	bruteForcePrintFace(printMan, 708);
+	bruteForcePrintFace(printMan, 718);
+	bruteForcePrintFace(printMan, 783);
+	bruteForcePrintFace(printMan, 835);
+	bruteForcePrintFace(printMan, 840);
+	bruteForcePrintFace(printMan, 841);
+	bruteForcePrintFace(printMan, 848);
+	bruteForcePrintFace(printMan, 849);
+	bruteForcePrintFace(printMan, 851);
+	bruteForcePrintFace(printMan, 853);
+	bruteForcePrintFace(printMan, 908);
+	bruteForcePrintFace(printMan, 922);
+	bruteForcePrintFace(printMan, 928);
+	bruteForcePrintFace(printMan, 933);
+	bruteForcePrintFace(printMan, 948);
+	bruteForcePrintFace(printMan, 949);
+	bruteForcePrintFace(printMan, 951);
+	bruteForcePrintFace(printMan, 956);
+	bruteForcePrintFace(printMan, 1022);
+	bruteForcePrintFace(printMan, 1023);
+	bruteForcePrintFace(printMan, 1024);
+	bruteForcePrintFace(printMan, 1026);
+	bruteForcePrintFace(printMan, 1027);
+	bruteForcePrintFace(printMan, 1028);
+	bruteForcePrintFace(printMan, 1030);
+	bruteForcePrintFace(printMan, 1033);
+	bruteForcePrintFace(printMan, 1035);
+	bruteForcePrintFace(printMan, 1039);
+	bruteForcePrintFace(printMan, 1041);
+	bruteForcePrintFace(printMan, 1043);
+	bruteForcePrintFace(printMan, 1045);
+	bruteForcePrintFace(printMan, 1047);
+	bruteForcePrintFace(printMan, 1049);
+	bruteForcePrintFace(printMan, 1051);
+	bruteForcePrintFace(printMan, 1053);
+	bruteForcePrintFace(printMan, 1055);
+	bruteForcePrintFace(printMan, 1057);
+	bruteForcePrintFace(printMan, 1059);
 
-	//bruteForcePrintFace(printMan, 694);
 	switch(printWhat)
 	{
 	case 1:

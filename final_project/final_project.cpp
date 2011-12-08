@@ -268,6 +268,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		ReportError("Unable to create DCEL: " + filename);
 	}
 
+	string savedFile(filename);
+	savedFile += ".dcel";
+	dcel1.SaveAs(savedFile);
+
 	string filename2("northAmericanHydroGML1.gml");
 	/*success = myGMLFile2.parse(filename2);
 	if(!success)

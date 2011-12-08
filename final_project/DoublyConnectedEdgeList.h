@@ -50,6 +50,10 @@ public:
 
 	void print(PrintManager &printMan, int printWhat);
 
+	void SaveAs(std::string &filename);
+
+	static void Open(std::string filename);
+
 private:
 	void addEdgesForVertex(const VertexEdgeMap &vertexEdgeMap, const unsigned int vertexIndex);
 	bool constructVertexCycles();

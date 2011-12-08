@@ -69,6 +69,67 @@ float isLeft( dnl::Point P0, dnl::Point P1, dnl::Point P2 )
     return angle;
 }*/
 
+void DoublyConnectedEdgeList::SaveAs(std::string &filename)
+{
+	std::ofstream out(filename.c_str(), ios::binary);
+
+	// Output Verticies
+	out << m_VERTEX.size() << endl;
+	for(unsigned int i = 0; i < m_VERTEX.size(); i++)
+	{
+		out.write((char *)&(m_VERTEX[i].m_x), sizeof(m_VERTEX[i].m_x));
+		out.write((char *)&(m_VERTEX[i].m_y), sizeof(m_VERTEX[i].m_y));
+
+		//out << m_VERTEX[i].m_x << " " << m_VERTEX[i].m_y << std::endl;
+	}
+
+	// Output Faces
+	out << m_FACES.size();
+	for(unsigned int i = 0; i < m_FACES.size(); i++)
+	{
+		out << m_FACES[i].size();
+		for(unsigned int j = 0; j < m_FACES[i].size(); j++)
+		{
+			out.write((char *)&(m_FACES[i][j].m_x), sizeof(m_FACES[i][j].m_x));
+			out.write((char *)&(m_FACES[i][j].m_y), sizeof(m_FACES[i][j].m_y));
+			//out << m_FACES[i][j].m_x << " " << m_FACES[i][j].m_y << std::endl;
+		}
+	}
+
+	// Output face edges
+	out << m_FACEEdges.size();
+	for(unsigned int i = 0; i < m_FACEEdges.size(); i++)
+	{
+		out << m_FACEEdges[i].size();
+		for(unsigned int j = 0; j < m_FACEEdges[i].size(); j++)
+		{
+			out.write((char *)&(m_FACEEdges[i][j].first), sizeof(m_FACEEdges[i][j].first));
+			out.write((char *)&(m_FACEEdges[i][j].second), sizeof(m_FACEEdges[i][j].second));
+			//out << m_FACEEdges[i][j].first << " " << m_FACEEdges[i][j].second << std::endl;
+		}
+	}
+
+
+
+	/*std::vector<dnl::Point> m_VERTEX;
+	std::vector< std::vector<dnl::Point> > m_FACES;
+	std::vector< std::vector<std::pair<int, bool> > > m_FACEEdges;
+	
+	std::vector<Edge> m_edges;
+	std::vector<int> m_firstOccuranceOfVertex;
+	std::vector<int> m_firstOccuranceOfFace;
+
+	std::vector<int> m_edgeCycleVertexIndex;
+	std::vector<EdgeCycleEntry> m_edgeCycles;
+*/
+	out.close();
+}
+
+void DoublyConnectedEdgeList::Open(std::string filename)
+{
+
+}
+
 double DiamondAngle(double x, double y)
 {
     if (y >= 0)

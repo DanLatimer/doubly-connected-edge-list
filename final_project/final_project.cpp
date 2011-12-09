@@ -310,8 +310,16 @@ void closeOpenDCEL()
 		utils::getInstance()->setTextOnStatusBar(L"Closing DCEL.");
 
 		delete dcel;
+		dcel = NULL;
 		layers.clear();
 	}
+}
+
+std::string pathToFilename(const std::string &str)
+{
+	size_t found;
+	found=str.find_last_of("/\\");
+	return str.substr(found+1);
 }
 
 bool loadFile(bool bUsingOpen, bool loadingDCEL, std::wstring &string)
@@ -332,7 +340,7 @@ bool loadFile(bool bUsingOpen, bool loadingDCEL, std::wstring &string)
 
 	if(bUsingOpen)
 	{
-		if(osfDlg.FileOpenDlg(szFilter, szDefExtention,TEXT("Open GIS Dataset"),  FALSE))
+		if(osfDlg.FileOpenDlg(szFilter, szDefExtention,TEXT("Open GIS Dataset..."),  FALSE))
 		{
 			string = osfDlg.GetFileName();
 			return true;
@@ -340,7 +348,7 @@ bool loadFile(bool bUsingOpen, bool loadingDCEL, std::wstring &string)
 	}
 	else
 	{
-		if(osfDlg.FileSaveDlg(szFilter, szDefExtention, NULL))
+		if(osfDlg.FileSaveDlg(szFilter, szDefExtention, TEXT("Save As...")))
 		{
 			string = osfDlg.GetFileName();
 			return true;
@@ -362,11 +370,11 @@ void loadGML()
 	}	
 
 	std::string filename = utils::WStringToString(file);
-	//std::string filename("NorthAmerica.gml");
+	std::string fileOnly = pathToFilename(filename);
 
 	// Load GML
 	std::wstring message(L"Step 1/3: Loading into RAM & Parsing GML File: ");
-	message += utils::StringToWString(filename).c_str();
+	message += utils::StringToWString(fileOnly).c_str();
 	utils::getInstance()->setTextOnStatusBar(message);
 
 	bool success = myGMLFile.parse(filename);
@@ -377,7 +385,7 @@ void loadGML()
 
 	// Create EdgeMap
 	message = L"Step 2/3: Constructing Vertex-EdgeMap for File: ";
-	message += utils::StringToWString(filename).c_str();
+	message += utils::StringToWString(fileOnly).c_str();
 	utils::getInstance()->setTextOnStatusBar(message);
 
 	success = edgeMap1.construct(&myGMLFile);
@@ -388,7 +396,7 @@ void loadGML()
 
 	// Create DCEL
 	message = L"Step 3/3: Constructing Doubly Connected Edge List for File: ";
-	message += utils::StringToWString(filename).c_str();
+	message += utils::StringToWString(fileOnly).c_str();
 	utils::getInstance()->setTextOnStatusBar(message);
 
 	dcel = new DoublyConnectedEdgeList();
@@ -398,16 +406,16 @@ void loadGML()
 		ReportError("Unable to create DCEL: " + filename);
 	}
 
-	layers.push_back(Layer("DCEL Areas: " + filename, 1, true));
-	layers.push_back(Layer("DCEL Lines: " + filename, 2, false));
-	layers.push_back(Layer("DCEL Edge labels: " + filename, 3, false));
-	layers.push_back(Layer("DCEL Vertex labels: " + filename, 4, false));
-	layers.push_back(Layer("DCEL Face labels: " + filename, 5, false));
+	layers.push_back(Layer("DCEL Areas: " + fileOnly, 1, true));
+	layers.push_back(Layer("DCEL Lines: " + fileOnly, 2, false));
+	layers.push_back(Layer("DCEL Edge labels: " + fileOnly, 3, false));
+	layers.push_back(Layer("DCEL Vertex labels: " + fileOnly, 4, false));
+	layers.push_back(Layer("DCEL Face labels: " + fileOnly, 5, false));
 
 	centreWindowOnDCEL();
 
 	message = L"Successfully loaded DCEL from GML: ";
-	message += utils::StringToWString(filename).c_str();
+	message += utils::StringToWString(fileOnly).c_str();
 	utils::getInstance()->setTextOnStatusBar(message);
 }
 
@@ -418,37 +426,37 @@ void loadDCEL()
 
 	std::wstring file;
 	bool userCancelled = !loadFile(true, true, file);
-	if(userCancelled == false)
+	if(userCancelled)
 	{
 		return;
 	}	
 
 	std::string filename = utils::WStringToString(file);
-	//("NorthAmerica.gml.dcel");
+	std::string fileOnly = pathToFilename(filename);
 
 	std::wstring message(L"Loading DCEL: ");
-	message += utils::StringToWString(filename).c_str();
+	message += utils::StringToWString(fileOnly).c_str();
 	utils::getInstance()->setTextOnStatusBar(message);
 
 	autoserial::BinaryFileReader bfr(filename.c_str());
 	bfr.read((autoserial::ISerializable**)(&dcel));
 
-	layers.push_back(Layer("DCEL Areas: " + filename, 1, true));
-	layers.push_back(Layer("DCEL Lines: " + filename, 2, false));
-	layers.push_back(Layer("DCEL Edge labels: " + filename, 3, false));
-	layers.push_back(Layer("DCEL Vertex labels: " + filename, 4, false));
-	layers.push_back(Layer("DCEL Face labels: " + filename, 5, false));
+	layers.push_back(Layer("DCEL Areas: " + fileOnly, 1, true));
+	layers.push_back(Layer("DCEL Lines: " + fileOnly, 2, false));
+	layers.push_back(Layer("DCEL Edge labels: " + fileOnly, 3, false));
+	layers.push_back(Layer("DCEL Vertex labels: " + fileOnly, 4, false));
+	layers.push_back(Layer("DCEL Face labels: " + fileOnly, 5, false));
 
 	centreWindowOnDCEL();
 
 	message = L"Successfully loaded DCEL: ";
-	message += utils::StringToWString(filename).c_str();
+	message += utils::StringToWString(fileOnly).c_str();
 	utils::getInstance()->setTextOnStatusBar(message);
 }
 
 void saveAsDCEL()
 {
-	std::wstring file;
+	std::wstring file = utils::StringToWString(layers[0].name);
 	bool userCancelled = !loadFile(false, true, file);
 	if(userCancelled)
 	{
@@ -456,12 +464,17 @@ void saveAsDCEL()
 	}	
 
 	std::string filename = utils::WStringToString(file);
-	
-	//std::string filename("NorthAmerica2.gml.dcel");
 
+	std::wstring message(L"Saving DCEL As: ");
+	message += utils::StringToWString(filename).c_str();
+	utils::getInstance()->setTextOnStatusBar(message);
 
 	autoserial::BinaryFileWriter bfw(filename.c_str());
     bfw.write(dcel);
+
+	message = L"Successfully saved DCEL As: ";
+	message += utils::StringToWString(filename).c_str();
+	utils::getInstance()->setTextOnStatusBar(message);
 }
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,

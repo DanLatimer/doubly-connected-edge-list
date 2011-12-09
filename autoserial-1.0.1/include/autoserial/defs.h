@@ -104,13 +104,13 @@
 # include <stdlib.h>
 
 // Undefine min and max (these should not be macros anyway)
-# undef min
-# undef max
-# if _MSC_VER<1300
+//# undef min
+//# undef max
+//# if _MSC_VER<1300
 // For older MS compilers, set min and max to _MIN and _MAX
-#  define min _MIN
-#  define max _MAX
-# endif
+//#  define min _MIN
+//#  define max _MAX
+//# endif
 #else
 // UNIX include files
 //# include <string.h>

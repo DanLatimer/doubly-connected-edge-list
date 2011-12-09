@@ -36,4 +36,9 @@ public:
 	std::vector< std::vector<int> > m_edges;
 	std::map<dnl::Point, int, cmp_point> m_vertexHashMap;
 
+	double m_llX;
+	double m_llY;
+	double m_urX;
+	double m_urY;
+
 };

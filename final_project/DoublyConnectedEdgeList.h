@@ -1,10 +1,13 @@
 
 #pragma once
 
+#include <autoserial/autoserial.h>
+
 #include "PrintManager.h"
 #include "VertexEdgeMap.h"
 
-class Edge {
+class Edge : public autoserial::ISerializable  
+{
 public:
 	Edge() : 
 	  vertex1(-1), 
@@ -14,12 +17,22 @@ public:
 	  nextEdgeVertex1(-1), 
 	  nextEdgeVertex2(-1) { }
 
-	int vertex1;
+	AS_CLASSDEF(Edge)                     
+    AS_MEMBERS                                      
+		AS_PUBLICITEM(int, vertex1)
+        AS_PUBLICITEM(int, vertex2)
+        AS_PUBLICITEM(int, face1)
+        AS_PUBLICITEM(int, face2)
+        AS_PUBLICITEM(int, nextEdgeVertex1)
+        AS_PUBLICITEM(int, nextEdgeVertex2)
+    AS_CLASSEND;  
+
+	/*int vertex1;
 	int vertex2;
 	int face1;
 	int face2;
 	int nextEdgeVertex1;
-	int nextEdgeVertex2;
+	int nextEdgeVertex2;*/
 
 	friend bool operator== (Edge &cP1, Edge &cP2)
 	{
@@ -32,15 +45,35 @@ public:
 	}
 };
 
-class EdgeCycleEntry
+class DirectedEdge : public autoserial::ISerializable 
+{
+public:
+	DirectedEdge(int edge = -1, bool direction = -1) : edge(edge), direction(direction) { }
+	
+	AS_CLASSDEF(DirectedEdge)                     
+    AS_MEMBERS                                      
+		AS_PUBLICITEM(int, edge)
+        AS_PUBLICITEM(bool, direction)
+    AS_CLASSEND;  
+
+	//int edge;
+	//bool direction;
+};
+
+class EdgeCycleEntry : public autoserial::ISerializable 
 {
 public:
 	EdgeCycleEntry(int vertex = -1, int next = -1) : vertex(vertex), next(next) { }
-	int vertex;
-	int next;
+	AS_CLASSDEF(EdgeCycleEntry)                     
+    AS_MEMBERS                                      
+		AS_PUBLICITEM(int, vertex)
+        AS_PUBLICITEM(int, next)
+    AS_CLASSEND;  
+	//int vertex;
+	//int next;
 };
 
-class DoublyConnectedEdgeList
+class DoublyConnectedEdgeList : public autoserial::ISerializable 
 {
 public:
 	// We donate the gmlFile to the DCEL when constructing it.
@@ -58,18 +91,38 @@ private:
 	void addEdgesForVertex(const VertexEdgeMap &vertexEdgeMap, const unsigned int vertexIndex);
 	bool constructVertexCycles();
 	bool constructFaceCycles();
-	bool findEdgesOfFace(int faceIndex, std::vector< std::pair<int, bool> > &edges);
+	bool findEdgesOfFace(int faceIndex, std::vector<DirectedEdge> &edges);
 	void createFaces();
 	int findNextNonDangle(
 		const int theFace, 
 		int currentEdge, 
 		std::map<int, bool> &edgesChecked,
-		const std::vector< std::pair<int, bool> > &edges);
+		const std::vector<DirectedEdge> &edges);
 	void bruteForcePrintFace(PrintManager &printMan, int faceNum);
-	bool isPolygonClosed(const std::vector< std::pair<int, bool> > &edges);
+	bool isPolygonClosed(const std::vector<DirectedEdge> &edges);
 
 	// Data
-	std::vector<dnl::Point> m_VERTEX;
+	AS_CLASSDEF(DoublyConnectedEdgeList)                     // Declare class name
+    AS_MEMBERS                                               // Start list of class members
+        AS_PRIVATEITEM(std::vector<dnl::Point>, m_VERTEX)
+        AS_PRIVATEITEM(std::vector< std::vector<dnl::Point> >, m_FACES)
+        AS_PRIVATEITEM(std::vector< std::vector<DirectedEdge> >, m_FACEEdges)
+        
+		AS_PRIVATEITEM(std::vector<Edge>, m_edges)
+        AS_PRIVATEITEM(std::vector<int>, m_firstOccuranceOfVertex)
+		AS_PRIVATEITEM(std::vector<int>, m_firstOccuranceOfFace)
+        
+		AS_PRIVATEITEM(std::vector<int>, m_edgeCycleVertexIndex)
+        AS_PRIVATEITEM(std::vector<EdgeCycleEntry>, m_edgeCycles)
+    
+        AS_PUBLICITEM(double, m_llX)
+        AS_PUBLICITEM(double, m_llY)
+        AS_PUBLICITEM(double, m_urX)
+        AS_PUBLICITEM(double, m_urY)
+
+	AS_CLASSEND;  
+
+	/*std::vector<dnl::Point> m_VERTEX;
 	std::vector< std::vector<dnl::Point> > m_FACES;
 	std::vector< std::vector<std::pair<int, bool> > > m_FACEEdges;
 	
@@ -78,7 +131,7 @@ private:
 	std::vector<int> m_firstOccuranceOfFace;
 
 	std::vector<int> m_edgeCycleVertexIndex;
-	std::vector<EdgeCycleEntry> m_edgeCycles;
+	std::vector<EdgeCycleEntry> m_edgeCycles;*/
 	
 
 };

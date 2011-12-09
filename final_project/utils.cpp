@@ -4,6 +4,7 @@
 #include "Point.h"
 #include "math.h"
 #include <sstream>
+#include "CommCtrl.h"
 
 using namespace dnl;
 using namespace std;
@@ -94,4 +95,30 @@ void utils::expandBoundingBox(dnl::Point &llBox, dnl::Point &urBox, const dnl::P
 	{
 		urBox.m_y = current.m_y;
 	}
+}
+
+std::wstring utils::StringToWString(const std::string& s)
+{
+	std::wstring temp(s.length(),L' ');
+	std::copy(s.begin(), s.end(), temp.begin());
+	return temp; 
+}
+
+std::string utils::WStringToString(const std::wstring& s)
+{
+	std::string temp(s.length(), ' ');
+	std::copy(s.begin(), s.end(), temp.begin());
+	return temp; 
+}
+
+void utils::setTextOnStatusBar(const std::wstring &str)
+{
+	if(statusBarSet == false)
+	{
+		return;
+	}
+
+	wchar_t szBuf[1000] = {0};
+	wsprintf(szBuf, str.c_str());
+    SendMessage(hWndStatus, SB_SETTEXT, 0, (LPARAM)(LPWSTR)szBuf);
 }

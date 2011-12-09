@@ -103,9 +103,9 @@ void DoublyConnectedEdgeList::SaveAs(std::string &filename)
 		out << m_FACEEdges[i].size();
 		for(unsigned int j = 0; j < m_FACEEdges[i].size(); j++)
 		{
-			out.write((char *)&(m_FACEEdges[i][j].first), sizeof(m_FACEEdges[i][j].first));
-			out.write((char *)&(m_FACEEdges[i][j].second), sizeof(m_FACEEdges[i][j].second));
-			//out << m_FACEEdges[i][j].first << " " << m_FACEEdges[i][j].second << std::endl;
+			out.write((char *)&(m_FACEEdges[i][j].edge), sizeof(m_FACEEdges[i][j].edge));
+			out.write((char *)&(m_FACEEdges[i][j].direction), sizeof(m_FACEEdges[i][j].direction));
+			//out << m_FACEEdges[i][j].edge << " " << m_FACEEdges[i][j].direction << std::endl;
 		}
 	}
 
@@ -390,6 +390,11 @@ bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 {
 	m_VERTEX = vertexEdgeMap.m_verticies;
 
+	m_llX = vertexEdgeMap.m_llX;
+	m_llY = vertexEdgeMap.m_llY;
+	m_urX = vertexEdgeMap.m_urX;
+	m_urY = vertexEdgeMap.m_urY;
+
 	for(unsigned int i = 0; i < m_VERTEX.size(); i++)
 	{
 		m_firstOccuranceOfVertex.push_back(-1);
@@ -440,11 +445,11 @@ bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 	return true;
 }
 
-bool isEdgeInVector(const std::vector< std::pair<int, bool> > &edges, int edge)
+bool isEdgeInVector(const std::vector<DirectedEdge> &edges, int edge)
 {
 	for(unsigned int i = 0; i < edges.size(); i++)
 	{
-		if(edges[i].first == edge)
+		if(edges[i].edge == edge)
 		{
 			return true;
 		}
@@ -456,7 +461,7 @@ int DoublyConnectedEdgeList::findNextNonDangle(
 	const int theFace, 
 	int currentEdge, 
 	std::map<int, bool> &edgesChecked,
-	const std::vector< std::pair<int, bool> > &edges)
+	const std::vector<DirectedEdge> &edges)
 {
 	std::queue<int> edgeQueue;
 
@@ -513,7 +518,7 @@ int DoublyConnectedEdgeList::findNextNonDangle(
 	return -1;
 }
 
-bool DoublyConnectedEdgeList::isPolygonClosed(const std::vector< std::pair<int, bool> > &edges)
+bool DoublyConnectedEdgeList::isPolygonClosed(const std::vector<DirectedEdge> &edges)
 {
 	if(edges.size() < 3)
 	{
@@ -521,36 +526,36 @@ bool DoublyConnectedEdgeList::isPolygonClosed(const std::vector< std::pair<int, 
 	}
 
 	int firstVertex;
-	if(edges.begin()->second)
+	if(edges.begin()->direction)
 	{
-		firstVertex = m_edges[edges.begin()->first].vertex1;
+		firstVertex = m_edges[edges.begin()->edge].vertex1;
 	}
 	else
 	{
-		firstVertex = m_edges[edges.begin()->first].vertex2;
+		firstVertex = m_edges[edges.begin()->edge].vertex2;
 	}
 
 	int lastVertex;
-	if((edges.end()-1)->second)
+	if((edges.end()-1)->direction)
 	{
-		lastVertex = m_edges[(edges.end()-1)->first].vertex2;
+		lastVertex = m_edges[(edges.end()-1)->edge].vertex2;
 	}
 	else
 	{
-		lastVertex = m_edges[(edges.end()-1)->first].vertex1;
+		lastVertex = m_edges[(edges.end()-1)->edge].vertex1;
 	}
 
 	return firstVertex == lastVertex;
 }
 
-bool DoublyConnectedEdgeList::findEdgesOfFace(int theFace, std::vector< std::pair<int, bool> > &edges)
+bool DoublyConnectedEdgeList::findEdgesOfFace(int theFace, std::vector<DirectedEdge> &edges)
 {
 	int currentEdge = m_firstOccuranceOfFace[theFace]; //a
 	int firstEdge = currentEdge; //a0
 	std::vector<int> edgeStack;
 
 	bool forward = (m_edges[currentEdge].face1 != theFace);
-	edges.push_back(std::pair<int, bool>(currentEdge, forward));
+	edges.push_back(DirectedEdge(currentEdge, forward));
 
 	if(!forward)
 	{
@@ -584,7 +589,7 @@ bool DoublyConnectedEdgeList::findEdgesOfFace(int theFace, std::vector< std::pai
 		}
 		
 		forward = (m_edges[currentEdge].face1 != theFace);
-		edges.push_back(std::pair<int, bool>(currentEdge, forward));
+		edges.push_back(DirectedEdge(currentEdge, forward));
 
 		if(!forward)
 		{
@@ -611,13 +616,13 @@ void DoublyConnectedEdgeList::createFaces()
 
 
 		std::vector<dnl::Point> points;
-		std::vector<std::pair<int, bool> > edgeIndicies;
+		std::vector<DirectedEdge> edgeIndicies;
 		bool success = findEdgesOfFace(i, edgeIndicies);
 		if(!success)
 		{
 			m_FACES.push_back(points);
 
-			std::vector<std::pair<int, bool> > failed;
+			std::vector<DirectedEdge> failed;
 			m_FACEEdges.push_back(failed);
 
 			myfile << i << std::endl;
@@ -630,23 +635,23 @@ void DoublyConnectedEdgeList::createFaces()
 		{
 			if(j == 0)
 			{
-				if(edgeIndicies[j].second)
+				if(edgeIndicies[j].direction)
 				{
-					points.push_back(m_VERTEX[m_edges[edgeIndicies[j].first].vertex1]);
+					points.push_back(m_VERTEX[m_edges[edgeIndicies[j].edge].vertex1]);
 				}
 				else
 				{
-					points.push_back(m_VERTEX[m_edges[edgeIndicies[j].first].vertex2]);
+					points.push_back(m_VERTEX[m_edges[edgeIndicies[j].edge].vertex2]);
 				}
 			}
 
-			if(edgeIndicies[j].second)
+			if(edgeIndicies[j].direction)
 			{
-				points.push_back(m_VERTEX[m_edges[edgeIndicies[j].first].vertex2]);
+				points.push_back(m_VERTEX[m_edges[edgeIndicies[j].edge].vertex2]);
 			}
 			else
 			{
-				points.push_back(m_VERTEX[m_edges[edgeIndicies[j].first].vertex1]);
+				points.push_back(m_VERTEX[m_edges[edgeIndicies[j].edge].vertex1]);
 			}
 		}
 

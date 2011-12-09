@@ -9,14 +9,18 @@
 #include <sstream>
 #include <string>
 #include <fstream>
+#include "CommCtrl.h"
 
-using namespace std;
+#include <autoserial/autoserial.h>
+
+//using namespace std;
 
 #include "final_project.h"
 
 #include "GMLFile.h"
 #include "VertexEdgeMap.h"
 #include "DoublyConnectedEdgeList.h"
+#include "utils.h"
 
 #ifndef WM_MOUSEWHEEL
 #define WM_MOUSEWHEEL WM_MOUSELAST+1 
@@ -25,15 +29,21 @@ using namespace std;
 
 UINT uMSH_MOUSEWHEEL = 0;
 
-using namespace Gdiplus;
-#pragma comment (lib,"Gdiplus.lib")
+//using namespace Gdiplus;
+//#pragma comment (lib,"Gdiplus.lib")
 
 #define MAX_LOADSTRING 100
+
+#define ID_LOAD_GML 1001
+#define ID_LOAD_DCEL 1002
+#define ID_SAVE_AS_DCEL 1003
 
 // Global Variables:
 HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
+HWND                hWnd;
+HWND				hWndStatus;
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
@@ -74,7 +84,7 @@ public:
 std::vector<Layer> layers;
 std::vector< std::pair<dnl::Point, dnl::Point> > linesToPrint;
 
-DoublyConnectedEdgeList dcel1;
+DoublyConnectedEdgeList *dcel = NULL;
 GMLFile myGMLFile;
 GMLFile myGMLFile2;
 VertexEdgeMap edgeMap1;
@@ -111,7 +121,7 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 	// TODO: Get window size (incase it changed) and subtract/add 
 	//       to our window size the X inc/dec and Y inc/dec
 
-	Graphics graphics(hdc);
+	Gdiplus::Graphics graphics(hdc);
 
 	PWINDOWINFO windowInfo = new WINDOWINFO;
 	GetWindowInfo(hWnd, windowInfo);
@@ -124,7 +134,7 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 	
 #ifdef _DEBUG
 	// Output window lines
-	Pen      pen(Color(0,0,0));
+	Gdiplus::Pen      pen(Gdiplus::Color(0,0,0));
 	// Horizontal & Vertical
 	graphics.DrawLine(&pen, 0.0, winY/2, winX, winY/2);
 	graphics.DrawLine(&pen, winX/2, 0.0, winX/2, winY);
@@ -172,34 +182,20 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 
 		switch(layers[i].layerNumber)
 		{
-		case 4:
+		case 1:
 		{
-			myGMLFile.print(printMan);
+			if(dcel != NULL)
+			{
+				dcel->print(printMan, 2);
+			}
 			break;
 		}
-		case 5:
+		case 2:
 		{
-			myGMLFile2.print(printMan);
-			break;
-		}
-		case 6:
-		{
-			edgeMap1.print(printMan);
-			break;
-		}
-		case 7:
-		{
-			edgeMap2.print(printMan);
-			break;
-		}
-		case 8:
-		{
-			dcel1.print(printMan, 1);
-			break;
-		}
-		case 9:
-		{
-			dcel1.print(printMan, 2);
+			if(dcel != NULL)
+			{
+				dcel->print(printMan, 1);
+			}
 			break;
 		}
 		default:
@@ -224,32 +220,78 @@ void getLines(std::ifstream &stream, std::vector<std::string> & lines)
 	assert(lines.size() > 0);
 }
 
-int APIENTRY _tWinMain(HINSTANCE hInstance,
-                     HINSTANCE hPrevInstance,
-                     LPTSTR    lpCmdLine,
-                     int       nCmdShow)
+void centreWindowOnDCEL()
 {
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
+	// Centre window on DCEL file boundaries
+	if(dcel != NULL)
+	{
+		PWINDOWINFO windowInfo = new WINDOWINFO;
+		GetWindowInfo(hWnd, windowInfo);
+		RECT windowRect = windowInfo->rcWindow;
 
-	//string filename("test1_pentagon.gml"); 
-	//string filename("test2_square.gml"); 
-	//string filename("test3_noAreaLine1.gml"); 
-	//string filename("test3_noAreaLine2.gml"); 
-	//string filename("test3_noAreaLine3.gml");   
-	//string filename("test3_noAreaLine4.gml");  
-	//string filename("test3_noAreaLine5.gml"); 
-	//string filename("test3_noAreaLine6.gml"); 
-	//string filename("test3_noAreaLine7.gml"); 
-	//string filename("test3_noAreaLine8.gml");
-	//string filename("test3_noAreaLine9.gml");
-	//string filename("test4_disjointPolygons.gml");  
-	//string filename("northAmericanRoadsGML1.gml");
-	string filename("NorthAmerica.gml");
-	
-	//string filename("newhampshire_areawater.gml");
-	//string filename("vermont_roads.gml");
-	//string filename("northAmericanHydroGML1.gml");
+		const double width = (windowRect.right - windowRect.left);
+		const double height = (windowRect.bottom - windowRect.top);
+
+		const double aspectRatio = width/height;
+
+		double llX = dcel->m_llX;
+		double llY = dcel->m_llY;
+		double urX = dcel->m_urX;
+		double urY = dcel->m_urY;
+
+		double dataHeight = urY - llY;
+		double dataWidth = urX - llX;
+
+		if(aspectRatio > 1)
+		{
+			// width dominates aspect ratio
+			dataHeight = urY - llY;
+			dataWidth = dataHeight * aspectRatio;
+			
+			LLWindow.m_x = llX;
+			LLWindow.m_y = llY + dataHeight;
+			
+			URWindow.m_x = LLWindow.m_x + dataWidth;
+			URWindow.m_y = LLWindow.m_y - dataHeight;
+		}
+		else
+		{
+			// height dominates aspect ratio
+			dataWidth = urX - llX;
+			dataHeight = dataWidth * aspectRatio;
+
+			LLWindow.m_x = llX;
+			LLWindow.m_y = llY + dataHeight;
+			
+			URWindow.m_x = LLWindow.m_x + dataWidth;
+			URWindow.m_y = LLWindow.m_y - dataHeight;
+		}
+
+		// Centre the two boxes
+
+		// Find the centriods
+		double dataCentreX = LLWindow.m_x + dataWidth / 2;
+		double dataCentreY = LLWindow.m_y + dataHeight / 2;
+
+	}
+}
+
+void closeOpenDCEL()
+{
+	if(dcel != NULL)
+	{
+		delete dcel;
+		layers.clear();
+	}
+}
+
+void loadGML()
+{
+	// Close any file open
+	closeOpenDCEL();
+
+	// Load GML
+	std::string filename("NorthAmerica.gml");
 	bool success = myGMLFile.parse(filename);
 	if(!success)
 	{
@@ -262,41 +304,69 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		ReportError("Unable to create edgeMap: " + filename);
 	}
 
-	success = dcel1.construct(edgeMap1);
+	dcel = new DoublyConnectedEdgeList();
+	success = dcel->construct(edgeMap1);
 	if(!success)
 	{
 		ReportError("Unable to create DCEL: " + filename);
 	}
 
-	string savedFile(filename);
-	savedFile += ".dcel";
-	dcel1.SaveAs(savedFile);
+	layers.push_back(Layer("DCEL Areas: " + filename, 1, true));
+	layers.push_back(Layer("DCEL Lines: " + filename, 2, false));
 
-	string filename2("northAmericanHydroGML1.gml");
-	/*success = myGMLFile2.parse(filename2);
-	if(!success)
-	{
-		ReportError("Unable to parse GML file: " + filename2);
-	}
+	centreWindowOnDCEL();
+}
 
-	success = edgeMap2.construct(&myGMLFile2);
-	if(!success)
-	{
-		ReportError("Unable to create edgeMap: " + filename2);
-	}*/
+void loadDCEL()
+{
+	// Close any file open
+	closeOpenDCEL();
 
-	layers.push_back(Layer("GMLFile: " + filename, 4, false));
-	//layers.push_back(Layer("GMLFile: " + filename2, 5, false));
-	layers.push_back(Layer("EdgeMap: " + filename, 6, false));
-	//layers.push_back(Layer("EdgeMap: " + filename2, 7, true));
-	layers.push_back(Layer("DCEL Areas: " + filename, 8, true));
-	layers.push_back(Layer("DCEL Lines: " + filename, 9, true));
+	std::string filename("NorthAmerica.gml.dcel");
+
+	wchar_t szBuf[1000] = {0};
+	wsprintf(szBuf, L"Loading DCEL: ");
+	wsprintf(szBuf + 14, utils::StringToWString(filename).c_str());
+    SendMessage(hWndStatus, SB_SETTEXT, 0, (LPARAM)(LPWSTR)szBuf);
+
+	autoserial::BinaryFileReader bfr(filename.c_str());
+	bfr.read((autoserial::ISerializable**)(&dcel));
+
+	layers.push_back(Layer("DCEL Areas: " + filename, 1, true));
+	layers.push_back(Layer("DCEL Lines: " + filename, 2, false));
+	
+	centreWindowOnDCEL();
+
+	std::wstring message(L"Successfully loaded DCEL: ");
+	message += utils::StringToWString(filename).c_str();
+	utils::setTextOnStatusBar(message);
+
+	//wsprintf(szBuf, L"Successfully loaded DCEL: ");
+	//wsprintf(szBuf + 26, utils::StringToWString(filename).c_str());
+    //SendMessage(hWndStatus, SB_SETTEXT, 0, (LPARAM)(LPWSTR)szBuf);
+}
+
+void saveAsDCEL()
+{
+	std::string filename("NorthAmerica2.gml.dcel");
+	autoserial::BinaryFileWriter bfw(filename.c_str());
+    bfw.write(dcel);
+}
+
+int APIENTRY _tWinMain(HINSTANCE hInstance,
+                     HINSTANCE hPrevInstance,
+                     LPTSTR    lpCmdLine,
+                     int       nCmdShow)
+{
+	UNREFERENCED_PARAMETER(hPrevInstance);
+	UNREFERENCED_PARAMETER(lpCmdLine);
+
+
 
 	HACCEL				hAccelTable;
-	HWND                hWnd;
 	MSG                 msg;
 	WNDCLASS            wndClass;
-	GdiplusStartupInput gdiplusStartupInput;
+	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 	ULONG_PTR           gdiplusToken;
 
 	uMSH_MOUSEWHEEL = RegisterWindowMessage(MSH_MOUSEWHEEL); 
@@ -329,63 +399,49 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	RegisterClass(&wndClass);
 
+	HMENU hMenu, hSubMenu;
+    HICON hIcon, hIconSm;
+
+    hMenu = CreateMenu();
+
+    hSubMenu = CreatePopupMenu();
+    AppendMenu(hSubMenu, MF_STRING, ID_LOAD_GML, L"Load .&GML File");
+    AppendMenu(hSubMenu, MF_STRING, ID_LOAD_DCEL, L"Load .&DCEL File");
+    AppendMenu(hSubMenu, MF_STRING, ID_SAVE_AS_DCEL, L"Save as .&DCEL File");
+    AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT)hSubMenu, L"&File");
+
 	hWnd = CreateWindow(
 		TEXT("CS6345 Final Project: Doubly Connected Edge List"),   // window class name
 		TEXT("CS6345 Final Project: Doubly Connected Edge List"),  // window caption
-		WS_OVERLAPPEDWINDOW,      // window style
-		CW_USEDEFAULT,            // initial x position
-		CW_USEDEFAULT,            // initial y position
-		SCREENSIZE_X,            // initial x size
-		SCREENSIZE_Y,            // initial y size
-		NULL,                     // parent window handle
-		NULL,                     // window menu handle
-		hInstance,                // program instance handle
-		NULL);                    // creation parameters
+		WS_OVERLAPPEDWINDOW,		// window style
+		CW_USEDEFAULT,				// initial x position
+		CW_USEDEFAULT,				// initial y position
+		SCREENSIZE_X,				// initial x size
+		SCREENSIZE_Y,				// initial y size
+		NULL,						// parent window handle
+		hMenu,						// window menu handle
+		hInstance,					// program instance handle
+		NULL);						// creation parameters
 
-	PWINDOWINFO windowInfo = new WINDOWINFO;
-	GetWindowInfo(hWnd, windowInfo);
-	RECT windowRect = windowInfo->rcWindow;
-
-	const double width = (windowRect.right - windowRect.left);
-	const double height = (windowRect.bottom - windowRect.top);
-
-	// Centre window on GML file boundaries
+	hWndStatus = CreateWindowEx( 
+		0L,                              // no extended styles
+		STATUSCLASSNAME,                 // status bar
+		L"",                              // no text 
+		WS_CHILD | WS_BORDER | WS_VISIBLE,  // styles
+		-100, -100, 10, 10,              // x, y, cx, cy
+		hWnd,                            // parent window
+		(HMENU)100,                      // window ID
+		hInstance,                           // instance
+		NULL);                           // window data
+	if (hWndStatus == NULL)
 	{
-		const double aspectRatio = width/height;
-		double dataHeight = myGMLFile.m_urY - myGMLFile.m_llY;
-		double dataWidth = myGMLFile.m_urX - myGMLFile.m_llX;
-
-		if(aspectRatio > 1)
-		{
-			// width dominates aspect ratio
-			dataHeight = myGMLFile.m_urY - myGMLFile.m_llY;
-			dataWidth = dataHeight * aspectRatio;
-			
-			LLWindow.m_x = myGMLFile.m_llX;
-			LLWindow.m_y = myGMLFile.m_llY + dataHeight;
-			
-			URWindow.m_x = LLWindow.m_x + dataWidth;
-			URWindow.m_y = LLWindow.m_y - dataHeight;
-		}
-		else
-		{
-			// height dominates aspect ratio
-			dataWidth = myGMLFile.m_urX - myGMLFile.m_llX;
-			dataHeight = dataWidth * aspectRatio;
-
-			LLWindow.m_x = myGMLFile.m_llX;
-			LLWindow.m_y = myGMLFile.m_llY + dataHeight;
-			
-			URWindow.m_x = LLWindow.m_x + dataWidth;
-			URWindow.m_y = LLWindow.m_y - dataHeight;
-		}
-
-		// Centre the two boxes
-
-		// Find the centriods
-		double dataCentreX = LLWindow.m_x + dataWidth / 2;
-		double dataCentreY = LLWindow.m_y + dataHeight / 2;
-
+		MessageBox (NULL, L"Status Bar not created!", NULL, MB_OK );
+		utils::statusBarSet = false;
+	}
+	else
+	{
+		utils::hWndStatus = hWndStatus;
+		utils::statusBarSet = true;
 	}
 
 	ShowWindow(hWnd, 1);
@@ -397,7 +453,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		DispatchMessage(&msg);
 	}
 
-	GdiplusShutdown(gdiplusToken);
+	Gdiplus::GdiplusShutdown(gdiplusToken);
 	return msg.wParam;
 }
 
@@ -531,6 +587,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			break;
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
+			break;
+        case ID_LOAD_GML:
+			loadGML();
+			::InvalidateRect(hWnd, NULL, TRUE);
+            break;
+		case ID_LOAD_DCEL:
+			loadDCEL();
+			::InvalidateRect(hWnd, NULL, TRUE);
+			break;
+		case ID_SAVE_AS_DCEL:
+			saveAsDCEL();
 			break;
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);

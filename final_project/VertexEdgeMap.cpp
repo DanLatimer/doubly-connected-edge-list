@@ -31,6 +31,11 @@ bool VertexEdgeMap::construct(GMLFile *gmlFile)
 	{
 		return false;
 	}
+
+	m_llX = gmlFile->m_llX;
+	m_llY = gmlFile->m_llY;
+	m_urX = gmlFile->m_urX;
+	m_urY = gmlFile->m_urY;
 	
 	// Process GMLFile's lines
 	for(unsigned int i = 0; i < gmlFile->m_lines.size(); i++)

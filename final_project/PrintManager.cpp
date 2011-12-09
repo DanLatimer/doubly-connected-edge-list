@@ -2,24 +2,23 @@
 #include "stdafx.h"
 #include "PrintManager.h"
 
+//#include <WinDef.h>
 #include <objidl.h>
 #include <gdiplus.h>
 #include "Strip.h"
-#include "Point.h"
-#include <gdiplus.h>
 #include "Point.h"
 #include "RunLengthCoding.h"
 
 #include <sstream>
 
-using namespace Gdiplus;
+//using namespace Gdiplus;
 #pragma comment (lib,"Gdiplus.lib")
 
 #define MAX_LOADSTRING 100
 
-Color colourToColor(Colour colour)
+Gdiplus::Color colourToColor(Colour colour)
 {
-	return Color(colour.m_opacity, colour.m_red, colour.m_green, colour.m_blue);
+	return Gdiplus::Color(colour.m_opacity, colour.m_red, colour.m_green, colour.m_blue);
 }
 
 Colour PrintManager::getRandomColour(int opacity)
@@ -53,8 +52,8 @@ PrintManager::PrintManager(
 	m_solidGreen(255, 51, 153, 51),
 	m_seethroughGreen(80, 51, 153, 51)
 {
-	m_graphics->SetClip(Rect(0, 0, m_screenWidth, m_screenHeight));
-	m_graphics->SetTextRenderingHint(TextRenderingHintAntiAlias);
+	m_graphics->SetClip(Gdiplus::Rect(0, 0, m_screenWidth, m_screenHeight));
+	m_graphics->SetTextRenderingHint(Gdiplus::TextRenderingHintAntiAlias);
 }
 
 float PrintManager::transformX(const double xValue)
@@ -120,9 +119,9 @@ void PrintManager::PrintArrow(dnl::Point begin, dnl::Point end, float size /*= 1
 	}
 
 	// DRAW triangle { AL, AR, END }
-	GraphicsPath path;
-	Pen          pen(Color(255, 51, 102, 255), 3);
-	SolidBrush   brush(Color(80, 51, 204, 255));
+	Gdiplus::GraphicsPath path;
+	Gdiplus::Pen          pen(Gdiplus::Color(255, 51, 102, 255), 3);
+	Gdiplus::SolidBrush   brush(Gdiplus::Color(80, 51, 204, 255));
 
 	path.AddLine(
 		transformX(AL.m_x), 
@@ -159,7 +158,7 @@ void PrintManager::PrintLine(dnl::Point begin, dnl::Point end, Colour *colour/* 
 		colour = &m_solidBlue;
 	}
 
-	Pen      pen(colourToColor(*colour), width);
+	Gdiplus::Pen      pen(colourToColor(*colour), width);
 	m_graphics->DrawLine(&pen, 
 		transformX(begin.m_x), 
 		transformY(begin.m_y), 
@@ -186,11 +185,11 @@ void PrintManager::PrintText(
 
 	size = transformTextSize(size);
 
-	FontFamily  fontFamily(L"Helvetica");
-	Font        font(&fontFamily, (float)size, FontStyleRegular, UnitPixel);
-	SolidBrush  solidBrush(colourToColor(*colour));
+	Gdiplus::FontFamily  fontFamily(L"Helvetica");
+	Gdiplus::Font        font(&fontFamily, (float)size, Gdiplus::FontStyleRegular, Gdiplus::UnitPixel);
+	Gdiplus::SolidBrush  solidBrush(colourToColor(*colour));
 
-	PointF pointF(transformX(begin.m_x), transformY(begin.m_y));
+	Gdiplus::PointF pointF(transformX(begin.m_x), transformY(begin.m_y));
 	m_graphics->DrawString(currLine, -1, &font, pointF, &solidBrush);
 }
 
@@ -250,8 +249,8 @@ void PrintManager::PrintPolygon(const std::vector<dnl::Point> &points, Colour *c
 		colour = &m_solidBlue;
 	}
 
-	SolidBrush   brush(colourToColor(*colour));
-	GraphicsPath path;
+	Gdiplus::SolidBrush   brush(colourToColor(*colour));
+	Gdiplus::GraphicsPath path;
 
 	path.StartFigure();
 	for(int i = 0; i < ((int)points.size()) - 1; i++)
@@ -351,7 +350,7 @@ void PrintManager::PrintRasterGrid(
 	PrintGridX(oneBoxWidth, minX, maxX, minY, maxY, colour);
 	PrintGridY(oneBoxHeight, minX, maxX, minY, maxY, colour);
 
-	SolidBrush   brush(colourToColor(*colour));
+	Gdiplus::SolidBrush   brush(colourToColor(*colour));
 
 	for(int i = 0; i < numHigh; i++)
 	{
@@ -367,7 +366,7 @@ void PrintManager::PrintRasterGrid(
 			// Print the square if it is encoded to be printted
 			if(my2DVector[i][j] != 0)
 			{
-				Rect rectangle(
+				Gdiplus::Rect rectangle(
 					transformX(x), 
 					transformY(y),
 					transformWidth((int)oneBoxWidth), 
@@ -391,9 +390,9 @@ void PrintManager::PrintRasterGrid(
 void PrintManager::PrintScreenText(std::wstringstream &info, const dnl::Point &origin)
 {
 	// Output text
-	FontFamily  fontFamily(L"Helvetica");
-	Font        font(&fontFamily, 12, FontStyleRegular, UnitPixel);
-	SolidBrush  solidBrush(Color(255, 0, 0, 0));
+	Gdiplus::FontFamily  fontFamily(L"Helvetica");
+	Gdiplus::Font        font(&fontFamily, 12, Gdiplus::FontStyleRegular, Gdiplus::UnitPixel);
+	Gdiplus::SolidBrush  solidBrush(Gdiplus::Color(255, 0, 0, 0));
 
 	for(int i = 0; true; i++)
 	{
@@ -404,8 +403,8 @@ void PrintManager::PrintScreenText(std::wstringstream &info, const dnl::Point &o
 			break;
 		}
 
-		PointF      pointF(origin.m_x, i*18.0f + origin.m_y);
-		m_graphics->SetTextRenderingHint(TextRenderingHintAntiAlias);
+		Gdiplus::PointF      pointF(origin.m_x, i*18.0f + origin.m_y);
+		m_graphics->SetTextRenderingHint(Gdiplus::TextRenderingHintAntiAlias);
 		m_graphics->DrawString(currLine, -1, &font, pointF, &solidBrush);
 	}
 }
@@ -417,8 +416,8 @@ void PrintManager::FillPoint(const dnl::Point &point, float size /*= 1*/, Colour
 		colour = &m_solidBlack;
 	}
 
-	GraphicsPath path;
-	SolidBrush   brush(colourToColor(*colour));
+	Gdiplus::GraphicsPath path;
+	Gdiplus::SolidBrush   brush(colourToColor(*colour));
 
 	float width = transformTextSize(size);
 	float height = transformTextSize(size);
@@ -439,8 +438,8 @@ void PrintManager::PrintPoint(const dnl::Point &point, float size /*= 1*/, Colou
 		colour = &m_solidBlack;
 	}
 
-	GraphicsPath path;
-	Pen          pen(colourToColor(*colour), 2);
+	Gdiplus::GraphicsPath path;
+	Gdiplus::Pen          pen(colourToColor(*colour), 2);
 
 	float width = transformWidth(size);
 	float height = transformHeight(size);

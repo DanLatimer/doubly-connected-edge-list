@@ -9,6 +9,8 @@
 using namespace dnl;
 using namespace std;
 
+utils *utils::m_instance = NULL;
+
 double utils::getSignedDistanceOfPointFromLine(const Point & begin, const Point & end, const Point & point)
 {
 	// Get Vector from begin to end.
@@ -109,6 +111,23 @@ std::string utils::WStringToString(const std::wstring& s)
 	std::string temp(s.length(), ' ');
 	std::copy(s.begin(), s.end(), temp.begin());
 	return temp; 
+}
+
+utils::utils() : statusBarSet(false) { 
+	if(true == false)
+	{
+
+	}
+}
+
+utils * utils::getInstance()
+{
+	if(m_instance == NULL)
+	{
+		m_instance = new utils();
+	}
+
+	return m_instance;
 }
 
 void utils::setTextOnStatusBar(const std::wstring &str)

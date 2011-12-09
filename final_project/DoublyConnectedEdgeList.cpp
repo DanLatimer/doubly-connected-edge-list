@@ -614,7 +614,6 @@ void DoublyConnectedEdgeList::createFaces()
 	{
 		assert(m_firstOccuranceOfFace[i] != -1);
 
-
 		std::vector<dnl::Point> points;
 		std::vector<DirectedEdge> edgeIndicies;
 		bool success = findEdgesOfFace(i, edgeIndicies);
@@ -729,30 +728,51 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 			dnl::Point vertex2 = m_VERTEX[m_edges[i].vertex2];
 
 			printMan.PrintLine(vertex1, vertex2, &printMan.m_solidBlack); 
+		}
+		break;
+	}
+	case 2:
+	{
+		// Print Faces
+		for(unsigned int i = 0; i < m_FACES.size(); i++)
+		{
+			printMan.PrintPolygon(m_FACES[i], &printMan.getRandomColour(60));
+		}
+		break;
+	}
+	case 3:
+	{
+		// Print Edges
+		for(unsigned int i = 0; i < m_edges.size(); i++)
+		{
+			dnl::Point vertex1 = m_VERTEX[m_edges[i].vertex1];
+			dnl::Point vertex2 = m_VERTEX[m_edges[i].vertex2];
 
-#ifdef _DEBUG
 			// Print directional arrow
-			//printMan.PrintArrow(vertex1, vertex2, 0.01);
+			printMan.PrintArrow(vertex1, vertex2, 0.01);
 
 			// Print Edge names
-			/*char text[100] = "E";
+			char text[100] = "E";
 			itoa(i, text + 1, 10);
 			dnl::Point textPoint((vertex1.m_x + vertex2.m_x)/2, (vertex1.m_y + vertex2.m_y)/2); 
-			printMan.PrintText(textPoint, text, 0.25);*/
-
-#endif
+			printMan.PrintText(textPoint, text, 0.25);
 		}
-
-#ifdef _DEBUG
+		break;
+	}
+	case 4:
+	{
 		// Print Verticies
-		/*char text[100] = "V";
+		char text[100] = "V";
 		for(unsigned int i = 0; i < m_VERTEX.size(); i++)
 		{
 			itoa(i, text + 1, 10);
 			printMan.FillPoint(m_VERTEX[i], 0.1);
 			printMan.PrintText(m_VERTEX[i], text, 0.25);
 		}
-
+		break;
+	}
+	case 5:
+	{
 		// Print Faces
 		std::wstringstream info;
 		info << "Faces:" << std::endl;
@@ -771,29 +791,17 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 					{
 						info << ", ";
 					}
-					if(m_FACEEdges[i][j].second == false)
+					if(m_FACEEdges[i][j].direction == false)
 					{
 						info << "-";
 					}
-					info << "E" << m_FACEEdges[i][j].first;
+					info << "E" << m_FACEEdges[i][j].edge;
 				}
 			}
 			info << "]" << std::endl;
 		}
 
-		printMan.PrintScreenText(info, dnl::Point(300,20));*/
-
-#endif
-
-		break;
-	}
-	case 2:
-	{
-		// Print Faces
-		for(unsigned int i = 0; i < m_FACES.size(); i++)
-		{
-			printMan.PrintPolygon(m_FACES[i], &printMan.getRandomColour(60));
-		}
+		printMan.PrintScreenText(info, dnl::Point(300,20));
 		break;
 	}
 	default:

@@ -48,7 +48,7 @@ public:
 class DirectedEdge : public autoserial::ISerializable 
 {
 public:
-	DirectedEdge(int edge = -1, bool direction = -1) : edge(edge), direction(direction) { }
+	DirectedEdge(int edge = -1, bool direction = false) : edge(edge), direction(direction) { }
 	
 	AS_CLASSDEF(DirectedEdge)                     
     AS_MEMBERS                                      

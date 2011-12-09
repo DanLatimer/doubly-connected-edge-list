@@ -2,6 +2,9 @@
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "final_project", "final_project\final_project.vcproj", "{03835E8D-20A9-4D94-AFB2-98D53D0E358C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{516CF36F-B3A5-450D-9B91-68F92BC19E61} = {516CF36F-B3A5-450D-9B91-68F92BC19E61}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "autoserial", "autoserial-1.0.1\autoserial\autoserial.vcproj", "{516CF36F-B3A5-450D-9B91-68F92BC19E61}"
 EndProject

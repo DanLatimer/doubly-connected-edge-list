@@ -11,7 +11,8 @@
 #include "targetver.h"
 #endif
 #define APSTUDIO_HIDDEN_SYMBOLS
-#include "windows.h"
+#include "afxwin.h"
+//#include "windows.h"
 #undef APSTUDIO_HIDDEN_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
@@ -111,7 +112,8 @@ BEGIN
     "#include ""targetver.h""\r\n"
     "#endif\r\n"
     "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
-    "#include ""windows.h""\r\n"
+	"#include \"afxwin.h\"\r\n"
+    "#//include ""windows.h""\r\n"
     "#undef APSTUDIO_HIDDEN_SYMBOLS\r\n"
     "\0"
 END

@@ -21,6 +21,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
+			UseOfMFC="0"
 			CharacterSet="1"
 			>
 			<Tool
@@ -41,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\rapidxml-1.13&quot;;&quot;..\autoserial-1.0.1\include&quot;"
+				AdditionalIncludeDirectories="&quot;..\rapidxml-1.13&quot;;&quot;..\autoserial-1.0.1\include&quot;;..\OSFDlg"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -61,7 +62,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="&quot;D:\My School Library\CS6345 - Spatial Data Structures\final_project\Debug\autoserial.lib&quot;"
+				AdditionalDependencies="&quot;$(OutDir)\autoserial.lib&quot; comctl32.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -192,6 +193,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\OSFDlg\OSFDlg.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Point.cpp"
 				>
 			</File>
@@ -275,6 +280,10 @@
 			</File>
 			<File
 				RelativePath=".\GMLFile.h"
+				>
+			</File>
+			<File
+				RelativePath="..\OSFDlg\OSFDlg.h"
 				>
 			</File>
 			<File

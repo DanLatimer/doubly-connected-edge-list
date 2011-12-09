@@ -3,19 +3,21 @@
 
 #include "stdafx.h"
 #include "zmouse.h"
-#include <windows.h>
 #include <objidl.h>
 #include <gdiplus.h>
 #include <sstream>
 #include <string>
 #include <fstream>
-#include "CommCtrl.h"
 
+#include "CommCtrl.h"
+#include "OSFDlg.h"
 #include <autoserial/autoserial.h>
 
 //using namespace std;
 
 #include "final_project.h"
+
+//#include "afxdlgs.h"
 
 #include "GMLFile.h"
 #include "VertexEdgeMap.h"
@@ -148,6 +150,66 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 
 	PrintManager printMan(LLWindow, URWindow, multX, multY, winWidth, winHeight, &hdc);
 
+		for(unsigned int i = 0; i < layers.size(); i++)
+	{
+		if(layers[i].on == false)
+		{
+			continue;
+		}
+
+		switch(layers[i].layerNumber)
+		{
+		case 1:
+		{
+			if(dcel != NULL)
+			{
+				dcel->print(printMan, 2);
+			}
+			break;
+		}
+		case 2:
+		{
+			if(dcel != NULL)
+			{
+				dcel->print(printMan, 1);
+			}
+			break;
+		}
+		case 3:
+		{
+			if(dcel != NULL)
+			{
+				dcel->print(printMan, 3);
+			}
+			break;
+		}
+		case 4:
+		{
+			if(dcel != NULL)
+			{
+				dcel->print(printMan, 4);
+			}
+			break;
+		}
+		case 5:
+		{
+			if(dcel != NULL)
+			{
+				dcel->print(printMan, 5);
+			}
+			break;
+		}
+		default:
+			break;
+		}
+	}
+
+	// Debug point panning lines
+	for(unsigned int i = 0; i < linesToPrint.size(); i++)
+	{
+		printMan.PrintLine(linesToPrint[i].first, linesToPrint[i].second);
+	}
+
 	// Output text
 	std::wstringstream info;
 	info << "CONTROLS:" << std::endl;
@@ -173,41 +235,6 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 
 	printMan.PrintScreenText(info, dnl::Point(20,20));
 
-	for(unsigned int i = 0; i < layers.size(); i++)
-	{
-		if(layers[i].on == false)
-		{
-			continue;
-		}
-
-		switch(layers[i].layerNumber)
-		{
-		case 1:
-		{
-			if(dcel != NULL)
-			{
-				dcel->print(printMan, 2);
-			}
-			break;
-		}
-		case 2:
-		{
-			if(dcel != NULL)
-			{
-				dcel->print(printMan, 1);
-			}
-			break;
-		}
-		default:
-			break;
-		}
-	}
-
-	// Debug point panning lines
-	for(unsigned int i = 0; i < linesToPrint.size(); i++)
-	{
-		printMan.PrintLine(linesToPrint[i].first, linesToPrint[i].second);
-	}
 }
 
 void getLines(std::ifstream &stream, std::vector<std::string> & lines)
@@ -280,9 +307,46 @@ void closeOpenDCEL()
 {
 	if(dcel != NULL)
 	{
+		utils::getInstance()->setTextOnStatusBar(L"Closing DCEL.");
+
 		delete dcel;
 		layers.clear();
 	}
+}
+
+bool loadFile(bool bUsingOpen, bool loadingDCEL, std::wstring &string)
+{
+	TCHAR dcelFilter[] = TEXT ("DCEL (*.dcel)\0*.dcel\0")  \
+						TEXT ("GML (*.gml)\0*.gml\0")  \
+						TEXT ("GIS Dataset Files (*.gml, *.dcel)\0*.gml;*.dcel\0")  \
+                        TEXT ("All Files (*.*)\0*.*\0\0");
+	TCHAR gmlFilter[] = TEXT ("GML (*.gml)\0*.gml\0")  \
+						TEXT ("DCEL (*.dcel)\0*.dcel\0")  \
+						TEXT ("GIS Dataset Files (*.gml, *.dcel)\0*.gml;*.dcel\0")  \
+                        TEXT ("All Files (*.*)\0*.*\0\0");
+	TCHAR szDefExtention[] = TEXT("dcel\0");
+
+	PTSTR szFilter = loadingDCEL ? dcelFilter : gmlFilter;
+
+	COSFDialog osfDlg;
+
+	if(bUsingOpen)
+	{
+		if(osfDlg.FileOpenDlg(szFilter, szDefExtention,TEXT("Open GIS Dataset"),  FALSE))
+		{
+			string = osfDlg.GetFileName();
+			return true;
+		}
+	}
+	else
+	{
+		if(osfDlg.FileSaveDlg(szFilter, szDefExtention, NULL))
+		{
+			string = osfDlg.GetFileName();
+			return true;
+		}
+	}
+	return false;
 }
 
 void loadGML()
@@ -290,19 +354,42 @@ void loadGML()
 	// Close any file open
 	closeOpenDCEL();
 
+	std::wstring file;
+	bool userCancelled = !loadFile(true, false, file);
+	if(userCancelled)
+	{
+		return;
+	}	
+
+	std::string filename = utils::WStringToString(file);
+	//std::string filename("NorthAmerica.gml");
+
 	// Load GML
-	std::string filename("NorthAmerica.gml");
+	std::wstring message(L"Step 1/3: Loading into RAM & Parsing GML File: ");
+	message += utils::StringToWString(filename).c_str();
+	utils::getInstance()->setTextOnStatusBar(message);
+
 	bool success = myGMLFile.parse(filename);
 	if(!success)
 	{
 		ReportError("Unable to parse GML file: " + filename);
 	}
 
+	// Create EdgeMap
+	message = L"Step 2/3: Constructing Vertex-EdgeMap for File: ";
+	message += utils::StringToWString(filename).c_str();
+	utils::getInstance()->setTextOnStatusBar(message);
+
 	success = edgeMap1.construct(&myGMLFile);
 	if(!success)
 	{
 		ReportError("Unable to create edgeMap: " + filename);
 	}
+
+	// Create DCEL
+	message = L"Step 3/3: Constructing Doubly Connected Edge List for File: ";
+	message += utils::StringToWString(filename).c_str();
+	utils::getInstance()->setTextOnStatusBar(message);
 
 	dcel = new DoublyConnectedEdgeList();
 	success = dcel->construct(edgeMap1);
@@ -313,8 +400,15 @@ void loadGML()
 
 	layers.push_back(Layer("DCEL Areas: " + filename, 1, true));
 	layers.push_back(Layer("DCEL Lines: " + filename, 2, false));
+	layers.push_back(Layer("DCEL Edge labels: " + filename, 3, false));
+	layers.push_back(Layer("DCEL Vertex labels: " + filename, 4, false));
+	layers.push_back(Layer("DCEL Face labels: " + filename, 5, false));
 
 	centreWindowOnDCEL();
+
+	message = L"Successfully loaded DCEL from GML: ";
+	message += utils::StringToWString(filename).c_str();
+	utils::getInstance()->setTextOnStatusBar(message);
 }
 
 void loadDCEL()
@@ -322,33 +416,50 @@ void loadDCEL()
 	// Close any file open
 	closeOpenDCEL();
 
-	std::string filename("NorthAmerica.gml.dcel");
+	std::wstring file;
+	bool userCancelled = !loadFile(true, true, file);
+	if(userCancelled == false)
+	{
+		return;
+	}	
 
-	wchar_t szBuf[1000] = {0};
-	wsprintf(szBuf, L"Loading DCEL: ");
-	wsprintf(szBuf + 14, utils::StringToWString(filename).c_str());
-    SendMessage(hWndStatus, SB_SETTEXT, 0, (LPARAM)(LPWSTR)szBuf);
+	std::string filename = utils::WStringToString(file);
+	//("NorthAmerica.gml.dcel");
+
+	std::wstring message(L"Loading DCEL: ");
+	message += utils::StringToWString(filename).c_str();
+	utils::getInstance()->setTextOnStatusBar(message);
 
 	autoserial::BinaryFileReader bfr(filename.c_str());
 	bfr.read((autoserial::ISerializable**)(&dcel));
 
 	layers.push_back(Layer("DCEL Areas: " + filename, 1, true));
 	layers.push_back(Layer("DCEL Lines: " + filename, 2, false));
-	
+	layers.push_back(Layer("DCEL Edge labels: " + filename, 3, false));
+	layers.push_back(Layer("DCEL Vertex labels: " + filename, 4, false));
+	layers.push_back(Layer("DCEL Face labels: " + filename, 5, false));
+
 	centreWindowOnDCEL();
 
-	std::wstring message(L"Successfully loaded DCEL: ");
+	message = L"Successfully loaded DCEL: ";
 	message += utils::StringToWString(filename).c_str();
-	utils::setTextOnStatusBar(message);
-
-	//wsprintf(szBuf, L"Successfully loaded DCEL: ");
-	//wsprintf(szBuf + 26, utils::StringToWString(filename).c_str());
-    //SendMessage(hWndStatus, SB_SETTEXT, 0, (LPARAM)(LPWSTR)szBuf);
+	utils::getInstance()->setTextOnStatusBar(message);
 }
 
 void saveAsDCEL()
 {
-	std::string filename("NorthAmerica2.gml.dcel");
+	std::wstring file;
+	bool userCancelled = !loadFile(false, true, file);
+	if(userCancelled)
+	{
+		return;
+	}	
+
+	std::string filename = utils::WStringToString(file);
+	
+	//std::string filename("NorthAmerica2.gml.dcel");
+
+
 	autoserial::BinaryFileWriter bfw(filename.c_str());
     bfw.write(dcel);
 }
@@ -361,7 +472,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
+    INITCOMMONCONTROLSEX initctrls;
+    initctrls.dwSize = sizeof(initctrls);
+    initctrls.dwICC = ICC_BAR_CLASSES;
+    InitCommonControlsEx(&initctrls);
 
+	utils *utilsInstance = utils::getInstance();
 
 	HACCEL				hAccelTable;
 	MSG                 msg;
@@ -433,15 +549,20 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		(HMENU)100,                      // window ID
 		hInstance,                           // instance
 		NULL);                           // window data
+
 	if (hWndStatus == NULL)
 	{
-		MessageBox (NULL, L"Status Bar not created!", NULL, MB_OK );
-		utils::statusBarSet = false;
+		DWORD errorNumber = GetLastError();
+		std::wstring errorMessage(L"Status Bar not created! \nError:");
+		char buff[100] = {0};
+		std::string errorNum(itoa(errorNumber, buff, 10));
+		errorMessage += utils::StringToWString(errorNum);
+		MessageBox (NULL, errorMessage.c_str(), NULL, MB_OK );
 	}
 	else
 	{
-		utils::hWndStatus = hWndStatus;
-		utils::statusBarSet = true;
+		utilsInstance->hWndStatus = hWndStatus;
+		utilsInstance->statusBarSet = true;
 	}
 
 	ShowWindow(hWnd, 1);

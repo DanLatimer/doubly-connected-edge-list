@@ -7,6 +7,7 @@
 class utils
 {
 public:
+	static utils *getInstance();
 
 	// line functions
 	static double distanceOfPointFromLine(const dnl::Point & begin, const dnl::Point & end, const dnl::Point & point);
@@ -19,8 +20,15 @@ public:
 	static std::wstring StringToWString(const std::string& s);
 	static std::string WStringToString(const std::wstring& s);
 
-	static void setTextOnStatusBar(const std::wstring &str);
+	void setTextOnStatusBar(const std::wstring &str);
+
+	HWND hWndStatus;
+	bool statusBarSet;
 private:
+	utils();
+	utils(const utils &other);
+	static utils *m_instance;
+
 	// Helper functions
 	static double getSignedDistanceOfPointFromLine(const dnl::Point & begin, const dnl::Point & end, const dnl::Point & point);
 };

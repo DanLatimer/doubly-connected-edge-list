@@ -8,9 +8,11 @@
 #include <sstream>
 #include <string>
 #include <fstream>
+#include <time.h>
 
 #include "CommCtrl.h"
 #include "OSFDlg.h"
+#include "InputBox.h"
 #include <autoserial/autoserial.h>
 
 //using namespace std;
@@ -39,6 +41,9 @@ UINT uMSH_MOUSEWHEEL = 0;
 #define ID_LOAD_GML 1001
 #define ID_LOAD_DCEL 1002
 #define ID_SAVE_AS_DCEL 1003
+#define ID_CLOSE 1004
+#define ID_QUERY_FACE_EDGES 1005
+#define ID_QUERY_VERTEX_EDGES 1006
 
 // Global Variables:
 HINSTANCE hInst;								// current instance
@@ -46,7 +51,6 @@ TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 HWND                hWnd;
 HWND				hWndStatus;
-
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
@@ -76,10 +80,12 @@ unsigned int SCREENSIZE_Y = CW_USEDEFAULT;
 class Layer
 {
 public:
-	Layer(std::string name, int layerNumber, bool on) 
-		: layerNumber(layerNumber), name(name), on(on) { }
+	Layer(std::string name, int layerNumber, bool on, int edgeType = 0, int index = 0) 
+		: layerNumber(layerNumber), name(name), on(on), edgeType(edgeType), index(index) { }
 	std::string name;
 	int layerNumber;
+	int edgeType;
+	int index;
 	bool on;
 };
 
@@ -94,6 +100,8 @@ VertexEdgeMap edgeMap2;
 
 dnl::Point LLWindow = dnl::Point(0,0);
 dnl::Point URWindow = dnl::Point(SCREENSIZE_X,SCREENSIZE_Y);
+
+CInputBox *m_myinputbox;
 
 dnl::Point screenToUniverse(HWND hWnd, dnl::Point screenPoint)
 {
@@ -150,7 +158,7 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 
 	PrintManager printMan(LLWindow, URWindow, multX, multY, winWidth, winHeight, &hdc);
 
-		for(unsigned int i = 0; i < layers.size(); i++)
+	for(unsigned int i = 0; i < layers.size(); i++)
 	{
 		if(layers[i].on == false)
 		{
@@ -200,7 +208,30 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 			break;
 		}
 		default:
+		{
+			// Vertex Edges or Face Edges
+			if(layers[i].edgeType == 1)
+			{
+				// Print Edges around Face
+				if(dcel != NULL)
+				{
+					dcel->print(printMan, 6, layers[i].index);
+				}
+			}
+			else if(layers[i].edgeType == 2)
+			{
+				// Print Edges around Vertex
+				if(dcel != NULL)
+				{
+					dcel->print(printMan, 7, layers[i].index);
+				}
+			}
+			else
+			{
+				// do nothing
+			}
 			break;
+		}
 		}
 	}
 
@@ -307,7 +338,7 @@ void closeOpenDCEL()
 {
 	if(dcel != NULL)
 	{
-		utils::getInstance()->setTextOnStatusBar(L"Closing DCEL.");
+		utils::getInstance()->setTextOnStatusBar(2, L"Closing DCEL.");
 
 		delete dcel;
 		dcel = NULL;
@@ -375,7 +406,7 @@ void loadGML()
 	// Load GML
 	std::wstring message(L"Step 1/3: Loading into RAM & Parsing GML File: ");
 	message += utils::StringToWString(fileOnly).c_str();
-	utils::getInstance()->setTextOnStatusBar(message);
+	utils::getInstance()->setTextOnStatusBar(2, message);
 
 	bool success = myGMLFile.parse(filename);
 	if(!success)
@@ -386,7 +417,7 @@ void loadGML()
 	// Create EdgeMap
 	message = L"Step 2/3: Constructing Vertex-EdgeMap for File: ";
 	message += utils::StringToWString(fileOnly).c_str();
-	utils::getInstance()->setTextOnStatusBar(message);
+	utils::getInstance()->setTextOnStatusBar(2, message);
 
 	success = edgeMap1.construct(&myGMLFile);
 	if(!success)
@@ -397,7 +428,7 @@ void loadGML()
 	// Create DCEL
 	message = L"Step 3/3: Constructing Doubly Connected Edge List for File: ";
 	message += utils::StringToWString(fileOnly).c_str();
-	utils::getInstance()->setTextOnStatusBar(message);
+	utils::getInstance()->setTextOnStatusBar(2, message);
 
 	dcel = new DoublyConnectedEdgeList();
 	success = dcel->construct(edgeMap1);
@@ -416,7 +447,7 @@ void loadGML()
 
 	message = L"Successfully loaded DCEL from GML: ";
 	message += utils::StringToWString(fileOnly).c_str();
-	utils::getInstance()->setTextOnStatusBar(message);
+	utils::getInstance()->setTextOnStatusBar(2, message);
 }
 
 void loadDCEL()
@@ -436,7 +467,7 @@ void loadDCEL()
 
 	std::wstring message(L"Loading DCEL: ");
 	message += utils::StringToWString(fileOnly).c_str();
-	utils::getInstance()->setTextOnStatusBar(message);
+	utils::getInstance()->setTextOnStatusBar(2, message);
 
 	autoserial::BinaryFileReader bfr(filename.c_str());
 	bfr.read((autoserial::ISerializable**)(&dcel));
@@ -451,7 +482,7 @@ void loadDCEL()
 
 	message = L"Successfully loaded DCEL: ";
 	message += utils::StringToWString(fileOnly).c_str();
-	utils::getInstance()->setTextOnStatusBar(message);
+	utils::getInstance()->setTextOnStatusBar(2, message);
 }
 
 void saveAsDCEL()
@@ -467,14 +498,14 @@ void saveAsDCEL()
 
 	std::wstring message(L"Saving DCEL As: ");
 	message += utils::StringToWString(filename).c_str();
-	utils::getInstance()->setTextOnStatusBar(message);
+	utils::getInstance()->setTextOnStatusBar(2, message);
 
 	autoserial::BinaryFileWriter bfw(filename.c_str());
     bfw.write(dcel);
 
 	message = L"Successfully saved DCEL As: ";
 	message += utils::StringToWString(filename).c_str();
-	utils::getInstance()->setTextOnStatusBar(message);
+	utils::getInstance()->setTextOnStatusBar(2, message);
 }
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
@@ -485,10 +516,18 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
+	m_myinputbox = new CInputBox(hInstance);
+
     INITCOMMONCONTROLSEX initctrls;
     initctrls.dwSize = sizeof(initctrls);
     initctrls.dwICC = ICC_BAR_CLASSES;
     InitCommonControlsEx(&initctrls);
+
+	LLWindow.m_x = -180;
+	LLWindow.m_y = 180;
+
+	URWindow.m_x = LLWindow.m_x + 360;
+	URWindow.m_y = LLWindow.m_y - 360;
 
 	utils *utilsInstance = utils::getInstance();
 
@@ -528,16 +567,23 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	RegisterClass(&wndClass);
 
-	HMENU hMenu, hSubMenu;
+	HMENU hMenu, hFileSubMenu, hQuerySubMenu;
     HICON hIcon, hIconSm;
 
     hMenu = CreateMenu();
 
-    hSubMenu = CreatePopupMenu();
-    AppendMenu(hSubMenu, MF_STRING, ID_LOAD_GML, L"Load .&GML File");
-    AppendMenu(hSubMenu, MF_STRING, ID_LOAD_DCEL, L"Load .&DCEL File");
-    AppendMenu(hSubMenu, MF_STRING, ID_SAVE_AS_DCEL, L"Save as .&DCEL File");
-    AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT)hSubMenu, L"&File");
+    hFileSubMenu = CreatePopupMenu();
+    AppendMenu(hFileSubMenu, MF_STRING, ID_LOAD_GML, L"Load .&GML File");
+    AppendMenu(hFileSubMenu, MF_STRING, ID_LOAD_DCEL, L"Load .&DCEL File");
+    AppendMenu(hFileSubMenu, MF_STRING, ID_SAVE_AS_DCEL, L"&Save as .DCEL File");
+    AppendMenu(hFileSubMenu, MF_STRING, ID_CLOSE, L"&Close File");
+    AppendMenu(hFileSubMenu, MF_STRING, IDM_EXIT, L"&Exit");
+    AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT)hFileSubMenu, L"&File");
+
+	hQuerySubMenu = CreatePopupMenu();
+    AppendMenu(hQuerySubMenu, MF_STRING, ID_QUERY_FACE_EDGES, L"Edges of &Face");
+    AppendMenu(hQuerySubMenu, MF_STRING, ID_QUERY_VERTEX_EDGES, L"Edges on &Vertex");
+    AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT)hQuerySubMenu, L"&Query DCEL");
 
 	hWnd = CreateWindow(
 		TEXT("CS6345 Final Project: Doubly Connected Edge List"),   // window class name
@@ -576,6 +622,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	{
 		utilsInstance->hWndStatus = hWndStatus;
 		utilsInstance->statusBarSet = true;
+
+		int statwidths[] = {100, 250, -1};
+		SendMessage(hWndStatus, SB_SETPARTS, sizeof(statwidths)/sizeof(int), (LPARAM)statwidths);
 	}
 
 	ShowWindow(hWnd, 1);
@@ -733,6 +782,184 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_SAVE_AS_DCEL:
 			saveAsDCEL();
 			break;
+		case ID_CLOSE:
+			closeOpenDCEL();
+			::InvalidateRect(hWnd, NULL, TRUE);
+			break;
+		case ID_QUERY_FACE_EDGES:
+		{
+			if(dcel == NULL)
+			{
+				MessageBox(hWnd, L"There is no Doubly Connected Edge List open.", L"Error", 0);
+				break;
+			}
+
+			wchar_t inputbuffer[100] = {0};
+
+			const int numberOfFaces = dcel->m_firstOccuranceOfFace.size();
+			std::wstring message(L"Enter the face number (0 to ");
+			message += utils::StringToWString(utils::parseLong(numberOfFaces-1));
+			message += L").";
+
+			const int result = m_myinputbox->ShowInputBox(
+				0, L"Query Face's Edges", message.c_str(), inputbuffer, 20);
+			if(result != S_OK)
+			{
+				// Add a layer that only print's that face's edges/edge labels
+				int faceIndex = utils::parseInt(utils::WStringToString(inputbuffer));
+				
+				if(faceIndex < 0 || faceIndex >= numberOfFaces)
+				{
+					std::wstring errorMsg(L"Face index provided \"");
+					errorMsg += inputbuffer;
+					errorMsg += L"\" is outside of range (0 to ";
+					errorMsg += utils::StringToWString(utils::parseLong(numberOfFaces-1));
+					errorMsg += L")";
+					MessageBox(hWnd, errorMsg.c_str(), L"Error", 0);
+					break;
+				}
+
+				std::vector<DirectedEdge> edges;
+
+				double elapsedTime;
+				bool success = false;
+				{
+					LARGE_INTEGER frequency;        // ticks per second
+					LARGE_INTEGER t1, t2;           // ticks
+
+					// get ticks per second
+					QueryPerformanceFrequency(&frequency);
+
+					// start timer
+					QueryPerformanceCounter(&t1);
+
+					// Perform Timed Action
+					success = dcel->findEdgesOfFace(faceIndex, edges);
+
+					// stop timer
+					QueryPerformanceCounter(&t2);
+
+					// compute and print the elapsed time in millisec
+					elapsedTime = (t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart;
+				}
+
+				std::wstring queryReport;
+				if(success)
+				{
+					queryReport = L"Querying edges of face ";
+						queryReport += inputbuffer;
+						queryReport += L" completed successfully!\n\n";
+					queryReport += L"Time expended: ";
+					queryReport += utils::StringToWString(utils::parseDouble(elapsedTime));
+						queryReport += L" milliseconds\n";
+					queryReport += L"Total edges: ";
+						queryReport += utils::StringToWString(utils::parseLong(dcel->m_edges.size()));
+						queryReport += L"\n";
+					queryReport += L"Edges examined: ";
+						queryReport += utils::StringToWString(utils::parseLong(edges.size()));
+						queryReport += L"\n";
+				}
+				else
+				{
+					queryReport = L"Query Failed.";
+				}
+
+				MessageBox(hWnd, queryReport.c_str(), L"Query Report", 0);
+
+				std::string layerName("Edges around Face #");
+				layerName += utils::WStringToString(inputbuffer);
+				layers.push_back(Layer(layerName, layers.size()+1, true, 1, faceIndex));
+			}
+			::InvalidateRect(hWnd, NULL, TRUE);
+			break;
+		}
+		case ID_QUERY_VERTEX_EDGES:
+		{
+			if(dcel == NULL)
+			{
+				MessageBox(hWnd, L"There is no Doubly Connected Edge List open.", L"Error", 0);
+				break;
+			}
+
+			wchar_t inputbuffer[100] = {0};
+
+			const int numberOfVerticies = dcel->m_firstOccuranceOfVertex.size();
+			std::wstring message(L"Enter the vertex number (0 to ");
+			message += utils::StringToWString(utils::parseLong(numberOfVerticies-1));
+			message += L").";
+
+			const int result = m_myinputbox->ShowInputBox(
+				0, L"Query Vertex's Edges", message.c_str(), inputbuffer, 20);
+			if(result != S_OK)
+			{
+				// Add a layer that only print's that vertex's edges/edge labels
+				int vertexIndex = utils::parseInt(utils::WStringToString(inputbuffer));
+				
+				if(vertexIndex < 0 || vertexIndex >= numberOfVerticies)
+				{
+					std::wstring errorMsg(L"Vertex index provided \"");
+					errorMsg += inputbuffer;
+					errorMsg += L"\" is outside of range (0 to ";
+					errorMsg += utils::StringToWString(utils::parseLong(numberOfVerticies-1));
+					errorMsg += L")";
+					MessageBox(hWnd, errorMsg.c_str(), L"Error", 0);
+					break;
+				}
+
+				std::vector<DirectedEdge> edges;
+
+				double elapsedTime;
+				bool success = false;
+				{
+					LARGE_INTEGER frequency;        // ticks per second
+					LARGE_INTEGER t1, t2;           // ticks
+
+					// get ticks per second
+					QueryPerformanceFrequency(&frequency);
+
+					// start timer
+					QueryPerformanceCounter(&t1);
+
+					// Perform Timed Action
+					success = dcel->findEdgesOfVertex(vertexIndex, edges);
+
+					// stop timer
+					QueryPerformanceCounter(&t2);
+
+					// compute and print the elapsed time in millisec
+					elapsedTime = (t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart;
+				}
+
+				std::wstring queryReport;
+				if(success)
+				{
+					queryReport = L"Querying edges incident on vertex ";
+						queryReport += inputbuffer;
+						queryReport += L" completed successfully!\n\n";
+					queryReport += L"Time expended: ";
+					queryReport += utils::StringToWString(utils::parseDouble(elapsedTime));
+						queryReport += L" milliseconds\n";
+					queryReport += L"Total edges: ";
+						queryReport += utils::StringToWString(utils::parseLong(dcel->m_edges.size()));
+						queryReport += L"\n";
+					queryReport += L"Edges examined: ";
+						queryReport += utils::StringToWString(utils::parseLong(edges.size()));
+						queryReport += L"\n";
+				}
+				else
+				{
+					queryReport = L"Query Failed.";
+				}
+
+				MessageBox(hWnd, queryReport.c_str(), L"Query Report", 0);
+
+				std::string layerName("Edges around Vertex #");
+				layerName += utils::WStringToString(inputbuffer);
+				layers.push_back(Layer(layerName, layers.size()+1, true, 2, vertexIndex));
+			}
+			::InvalidateRect(hWnd, NULL, TRUE);
+			break;
+		}
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
@@ -748,19 +975,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_LBUTTONUP:
 		{
 			ptsCursor = MAKEPOINTS(lParam); 
-			ptsCursor.x;
-			ptsCursor.y;
-
-			// TODO: Handle the PAN operation
-			mouseDownPoint.m_x;
-			mouseDownPoint.m_y;
-
-			// for now just print a line from where we pressed
-			// down the mouse to where we let it up.
 
 			dnl::Point begin = screenToUniverse(hWnd, mouseDownPoint);
 			dnl::Point end = screenToUniverse(hWnd, dnl::Point(ptsCursor.x, ptsCursor.y));
-			//linesToPrint.push_back( std::pair<dnl::Point, dnl::Point>(begin, end)); 
 
 			const double xChange = end.m_x - begin.m_x;
 			const double yChange = end.m_y - begin.m_y;
@@ -776,8 +993,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_LBUTTONDOWN:
 		{
 			ptsCursor = MAKEPOINTS(lParam); 
-			ptsCursor.x;
-			ptsCursor.y;
 
 			mouseDown = true;
 			mouseDownPoint.m_x = ptsCursor.x;
@@ -791,8 +1006,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			RECT windowRect = windowInfo->rcWindow;
 
 			ptsCursor = MAKEPOINTS(lParam); 
-			ptsCursor.x;
-			ptsCursor.y;
 
 			double width = URWindow.m_x - LLWindow.m_x;
 			double height = URWindow.m_y - LLWindow.m_y;
@@ -821,12 +1034,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			break;
 		}
-        case WM_MOUSEWHEEL:
-		{
-			((short) HIWORD(wParam)< 0) ? zoomOut() : zoomIn();
-			::InvalidateRect(hWnd, NULL, TRUE);
-			break;
-		}
+    case WM_MOUSEWHEEL:
+	{
+		((short) HIWORD(wParam)< 0) ? zoomOut() : zoomIn();
+		::InvalidateRect(hWnd, NULL, TRUE);
+		break;
+	}
+	case WM_MOUSEMOVE:
+	{
+		POINT coord;
+		GetCursorPos(&coord);
+		dnl::Point currentMousePosition = screenToUniverse(hWnd, dnl::Point(coord.x, coord.y));
+
+		std::wstring message(L"(");
+		message += utils::StringToWString(utils::parseDouble(currentMousePosition.m_x));
+		message += L", ";
+		message += utils::StringToWString(utils::parseDouble(currentMousePosition.m_y));
+		message += L")";
+		
+		utils::getInstance()->setTextOnStatusBar(1, message);
+		break;
+	}
 	case WM_CHAR: 
 	  // Process "displayable" characters
 		{

@@ -27,13 +27,6 @@ public:
         AS_PUBLICITEM(int, nextEdgeVertex2)
     AS_CLASSEND;  
 
-	/*int vertex1;
-	int vertex2;
-	int face1;
-	int face2;
-	int nextEdgeVertex1;
-	int nextEdgeVertex2;*/
-
 	friend bool operator== (Edge &cP1, Edge &cP2)
 	{
 		return cP1.vertex1 == cP2.vertex1 &&
@@ -55,9 +48,6 @@ public:
 		AS_PUBLICITEM(int, edge)
         AS_PUBLICITEM(bool, direction)
     AS_CLASSEND;  
-
-	//int edge;
-	//bool direction;
 };
 
 class EdgeCycleEntry : public autoserial::ISerializable 
@@ -69,8 +59,6 @@ public:
 		AS_PUBLICITEM(int, vertex)
         AS_PUBLICITEM(int, next)
     AS_CLASSEND;  
-	//int vertex;
-	//int next;
 };
 
 class DoublyConnectedEdgeList : public autoserial::ISerializable 
@@ -80,18 +68,15 @@ public:
 	DoublyConnectedEdgeList() { }
 
 	bool construct(const VertexEdgeMap &vertexEdgeMap);
+	void print(PrintManager &printMan, int printWhat, int index = 0);
 
-	void print(PrintManager &printMan, int printWhat);
-
-	void SaveAs(std::string &filename);
-
-	static void Open(std::string filename);
+	bool findEdgesOfFace(int faceIndex, std::vector<DirectedEdge> &edges);
+	bool findEdgesOfVertex(int vertexIndex, std::vector<DirectedEdge> &edges);
 
 private:
 	void addEdgesForVertex(const VertexEdgeMap &vertexEdgeMap, const unsigned int vertexIndex);
 	bool constructVertexCycles();
 	bool constructFaceCycles();
-	bool findEdgesOfFace(int faceIndex, std::vector<DirectedEdge> &edges);
 	void createFaces();
 	int findNextNonDangle(
 		const int theFace, 
@@ -105,12 +90,10 @@ private:
 	AS_CLASSDEF(DoublyConnectedEdgeList)                     // Declare class name
     AS_MEMBERS                                               // Start list of class members
         AS_PRIVATEITEM(std::vector<dnl::Point>, m_VERTEX)
-        AS_PRIVATEITEM(std::vector< std::vector<dnl::Point> >, m_FACES)
-        AS_PRIVATEITEM(std::vector< std::vector<DirectedEdge> >, m_FACEEdges)
         
-		AS_PRIVATEITEM(std::vector<Edge>, m_edges)
-        AS_PRIVATEITEM(std::vector<int>, m_firstOccuranceOfVertex)
-		AS_PRIVATEITEM(std::vector<int>, m_firstOccuranceOfFace)
+		AS_PUBLICITEM(std::vector<Edge>, m_edges)
+        AS_PUBLICITEM(std::vector<int>, m_firstOccuranceOfVertex)
+		AS_PUBLICITEM(std::vector<int>, m_firstOccuranceOfFace)
         
 		AS_PRIVATEITEM(std::vector<int>, m_edgeCycleVertexIndex)
         AS_PRIVATEITEM(std::vector<EdgeCycleEntry>, m_edgeCycles)
@@ -122,16 +105,9 @@ private:
 
 	AS_CLASSEND;  
 
-	/*std::vector<dnl::Point> m_VERTEX;
+private:
+	// CACHE VARIABLES
+	// Constructed when needed and saved only in non-persistent memory.
 	std::vector< std::vector<dnl::Point> > m_FACES;
-	std::vector< std::vector<std::pair<int, bool> > > m_FACEEdges;
-	
-	std::vector<Edge> m_edges;
-	std::vector<int> m_firstOccuranceOfVertex;
-	std::vector<int> m_firstOccuranceOfFace;
-
-	std::vector<int> m_edgeCycleVertexIndex;
-	std::vector<EdgeCycleEntry> m_edgeCycles;*/
-	
-
+	std::vector< std::vector<DirectedEdge> > m_FACEEdges;
 };

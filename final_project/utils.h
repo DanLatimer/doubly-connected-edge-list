@@ -14,13 +14,17 @@ public:
 	static bool pointToRightOfLine(const dnl::Point & begin, const dnl::Point & end, const dnl::Point & point);
 
 	static double parseDouble(const std::string &data);
+	static int parseInt(const std::string &data);
+	static std::string parseDouble(const double number);
+	static std::string parseLong(const long number);
+
 	static void expandBoundingBox(dnl::Point &llBox, dnl::Point &urBox, const dnl::Point &llCurrent, const dnl::Point &urCurrent);
 	static void expandBoundingBox(dnl::Point &llBox, dnl::Point &urBox, const dnl::Point &current);
 
 	static std::wstring StringToWString(const std::string& s);
 	static std::string WStringToString(const std::wstring& s);
 
-	void setTextOnStatusBar(const std::wstring &str);
+	void setTextOnStatusBar(const int sectionIndex, const std::wstring &str);
 
 	HWND hWndStatus;
 	bool statusBarSet;

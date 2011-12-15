@@ -193,6 +193,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\InputBox.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\OSFDlg\OSFDlg.cpp"
 				>
 			</File>
@@ -284,6 +288,10 @@
 			</File>
 			<File
 				RelativePath=".\GMLFile.h"
+				>
+			</File>
+			<File
+				RelativePath=".\InputBox.h"
 				>
 			</File>
 			<File

@@ -69,67 +69,6 @@ float isLeft( dnl::Point P0, dnl::Point P1, dnl::Point P2 )
     return angle;
 }*/
 
-void DoublyConnectedEdgeList::SaveAs(std::string &filename)
-{
-	std::ofstream out(filename.c_str(), ios::binary);
-
-	// Output Verticies
-	out << m_VERTEX.size() << endl;
-	for(unsigned int i = 0; i < m_VERTEX.size(); i++)
-	{
-		out.write((char *)&(m_VERTEX[i].m_x), sizeof(m_VERTEX[i].m_x));
-		out.write((char *)&(m_VERTEX[i].m_y), sizeof(m_VERTEX[i].m_y));
-
-		//out << m_VERTEX[i].m_x << " " << m_VERTEX[i].m_y << std::endl;
-	}
-
-	// Output Faces
-	out << m_FACES.size();
-	for(unsigned int i = 0; i < m_FACES.size(); i++)
-	{
-		out << m_FACES[i].size();
-		for(unsigned int j = 0; j < m_FACES[i].size(); j++)
-		{
-			out.write((char *)&(m_FACES[i][j].m_x), sizeof(m_FACES[i][j].m_x));
-			out.write((char *)&(m_FACES[i][j].m_y), sizeof(m_FACES[i][j].m_y));
-			//out << m_FACES[i][j].m_x << " " << m_FACES[i][j].m_y << std::endl;
-		}
-	}
-
-	// Output face edges
-	out << m_FACEEdges.size();
-	for(unsigned int i = 0; i < m_FACEEdges.size(); i++)
-	{
-		out << m_FACEEdges[i].size();
-		for(unsigned int j = 0; j < m_FACEEdges[i].size(); j++)
-		{
-			out.write((char *)&(m_FACEEdges[i][j].edge), sizeof(m_FACEEdges[i][j].edge));
-			out.write((char *)&(m_FACEEdges[i][j].direction), sizeof(m_FACEEdges[i][j].direction));
-			//out << m_FACEEdges[i][j].edge << " " << m_FACEEdges[i][j].direction << std::endl;
-		}
-	}
-
-
-
-	/*std::vector<dnl::Point> m_VERTEX;
-	std::vector< std::vector<dnl::Point> > m_FACES;
-	std::vector< std::vector<std::pair<int, bool> > > m_FACEEdges;
-	
-	std::vector<Edge> m_edges;
-	std::vector<int> m_firstOccuranceOfVertex;
-	std::vector<int> m_firstOccuranceOfFace;
-
-	std::vector<int> m_edgeCycleVertexIndex;
-	std::vector<EdgeCycleEntry> m_edgeCycles;
-*/
-	out.close();
-}
-
-void DoublyConnectedEdgeList::Open(std::string filename)
-{
-
-}
-
 double DiamondAngle(double x, double y)
 {
     if (y >= 0)
@@ -605,6 +544,63 @@ bool DoublyConnectedEdgeList::findEdgesOfFace(int theFace, std::vector<DirectedE
 	return true;
 }
 
+bool DoublyConnectedEdgeList::findEdgesOfVertex(int vertexIndex, std::vector<DirectedEdge> &edges)
+{
+	int currentEdge = m_firstOccuranceOfVertex[vertexIndex]; //a
+	int firstEdge = currentEdge; //a0
+	std::vector<int> edgeStack;
+
+	bool forward = (m_edges[currentEdge].vertex1 != vertexIndex);
+	edges.push_back(DirectedEdge(currentEdge, forward));
+
+	if(!forward)
+	{
+		// Negative Edge?
+		currentEdge = m_edges[currentEdge].nextEdgeVertex1;
+	}
+	else
+	{
+		// Positive Edge?
+		currentEdge = m_edges[currentEdge].nextEdgeVertex2;
+	}
+
+	bool backtrack = false;
+	while(currentEdge != firstEdge)
+	{
+		// Never enter an edge that has the same face on both sides, look for alternative
+		if(m_edges[currentEdge].vertex1 == m_edges[currentEdge].face2) 
+		{
+			//return false;
+			std::map<int, bool> edgesChecked;
+			currentEdge = findNextNonDangle(vertexIndex, currentEdge, edgesChecked, edges);
+			if(currentEdge == -1)
+			{
+				bool closedPolygon = isPolygonClosed(edges);
+				if(closedPolygon)
+				{
+					return true;
+				}
+				return false;
+			}
+		}
+		
+		forward = (m_edges[currentEdge].vertex1 != vertexIndex);
+		edges.push_back(DirectedEdge(currentEdge, forward));
+
+		if(!forward)
+		{
+			// Negative Edge?
+			currentEdge = m_edges[currentEdge].nextEdgeVertex1;
+		}
+		else
+		{
+			// Positive Edge?
+			currentEdge = m_edges[currentEdge].nextEdgeVertex2;
+		}
+	}
+	return true;
+}
+
 void DoublyConnectedEdgeList::createFaces()
 {
 	ofstream myfile;
@@ -710,7 +706,7 @@ void DoublyConnectedEdgeList::bruteForcePrintFace(PrintManager &printMan, int fa
 
 }
 
-void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
+void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat, int index /*= 0*/)
 {
 	// Brute Force Print faces
 	
@@ -734,6 +730,10 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 	case 2:
 	{
 		// Print Faces
+		if(m_FACES.size() == 0)
+		{
+			createFaces();
+		}
 		for(unsigned int i = 0; i < m_FACES.size(); i++)
 		{
 			printMan.PrintPolygon(m_FACES[i], &printMan.getRandomColour(60));
@@ -774,6 +774,10 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 	case 5:
 	{
 		// Print Faces
+		if(m_FACEEdges.size() == 0)
+		{
+			createFaces();
+		}
 		std::wstringstream info;
 		info << "Faces:" << std::endl;
 		for(unsigned int i = 0; i < m_FACEEdges.size(); i++)
@@ -802,6 +806,82 @@ void DoublyConnectedEdgeList::print(PrintManager &printMan, int printWhat)
 		}
 
 		printMan.PrintScreenText(info, dnl::Point(300,20));
+		break;
+	}
+	case 6:
+	{
+		// Print Edges of Face
+		std::vector<DirectedEdge> edges;
+		bool success = findEdgesOfFace(index, edges);
+		assert(success);
+
+		for(unsigned int i = 0; i < edges.size(); i++)
+		{
+			dnl::Point begin, end;
+
+			Edge &currentEdge = m_edges[edges[i].edge];
+			
+			dnl::Point vertex1 = m_VERTEX[currentEdge.vertex1];
+			dnl::Point vertex2 = m_VERTEX[currentEdge.vertex2];
+			
+			if(edges[i].direction)
+			{
+				begin = vertex1;
+				end = vertex2;
+			}
+			else
+			{
+				end = vertex1;
+				begin = vertex2;
+			}
+
+			printMan.PrintLine(vertex1, vertex2, &printMan.m_solidBlack); 
+			printMan.PrintArrow(begin, end, 0.01);
+
+			// Print Edge names
+			char text[100] = "E";
+			itoa(edges[i].edge, text + 1, 10);
+			dnl::Point textPoint((begin.m_x + end.m_x)/2, (begin.m_y + end.m_y)/2); 
+			printMan.PrintText(textPoint, text, 0.25);
+		}
+		break;
+	}
+	case 7:
+	{
+		// Print Edges of Vertex
+		std::vector<DirectedEdge> edges;
+		bool success = findEdgesOfVertex(index, edges);
+		assert(success);
+
+		for(unsigned int i = 0; i < edges.size(); i++)
+		{
+			dnl::Point begin, end;
+
+			Edge &currentEdge = m_edges[edges[i].edge];
+			
+			dnl::Point vertex1 = m_VERTEX[currentEdge.vertex1];
+			dnl::Point vertex2 = m_VERTEX[currentEdge.vertex2];
+			
+			if(edges[i].direction)
+			{
+				begin = vertex1;
+				end = vertex2;
+			}
+			else
+			{
+				end = vertex1;
+				begin = vertex2;
+			}
+
+			printMan.PrintLine(vertex1, vertex2, &printMan.m_solidBlack); 
+			printMan.PrintArrow(begin, end, 0.01);
+
+			// Print Edge names
+			char text[100] = "E";
+			itoa(edges[i].edge, text + 1, 10);
+			dnl::Point textPoint((begin.m_x + end.m_x)/2, (begin.m_y + end.m_y)/2); 
+			printMan.PrintText(textPoint, text, 0.25);
+		}
 		break;
 	}
 	default:

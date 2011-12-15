@@ -53,6 +53,32 @@ double utils::parseDouble(const std::string &data)
 	return retVal;
 }
 
+int utils::parseInt(const std::string &data)
+{
+	std::stringstream stream(data);
+	int retVal;
+	stream >> retVal;
+	return retVal;
+}
+
+std::string utils::parseDouble(const double number)
+{
+	std::string retVal;
+	std::stringstream strstream;
+	strstream << number;
+	strstream >> retVal;
+	return retVal;
+}
+
+std::string utils::parseLong(const long number)
+{
+	std::string retVal;
+	std::stringstream strstream;
+	strstream << number;
+	strstream >> retVal;
+	return retVal;
+}
+
 void utils::expandBoundingBox(dnl::Point &llBox, dnl::Point &urBox, const dnl::Point &llCurrent, const dnl::Point &urCurrent)
 {
 	if(llCurrent.m_x < llBox.m_x)
@@ -130,7 +156,7 @@ utils * utils::getInstance()
 	return m_instance;
 }
 
-void utils::setTextOnStatusBar(const std::wstring &str)
+void utils::setTextOnStatusBar(const int sectionIndex, const std::wstring &str)
 {
 	if(statusBarSet == false)
 	{
@@ -139,5 +165,5 @@ void utils::setTextOnStatusBar(const std::wstring &str)
 
 	wchar_t szBuf[1000] = {0};
 	wsprintf(szBuf, str.c_str());
-    SendMessage(hWndStatus, SB_SETTEXT, 0, (LPARAM)(LPWSTR)szBuf);
+    SendMessage(hWndStatus, SB_SETTEXT, sectionIndex, (LPARAM)(LPWSTR)szBuf);
 }

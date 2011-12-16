@@ -295,10 +295,10 @@ void DoublyConnectedEdgeList::constructKDTree()
 	message += L" verticies [0/100]";
 	utils::getInstance()->setTextOnStatusBar(2, message.c_str());
 
-	const int fivePercent = ceil((double)m_VERTEX.size() / 20.0);
+	const int onePercent = (double)m_VERTEX.size() / 100.0;
 	for(unsigned int i = 0; i < m_VERTEX.size(); i++)
 	{
-		if(i % fivePercent == 0)
+		if(onePercent == 0 || i % onePercent == 0)
 		{
 			const int percentComplete = ceil(((double)i)*100.0/((double)m_VERTEX.size()));
 			std::wstring message = L"Constructing KDTree - Part 2/2: Inserting ";
@@ -328,14 +328,14 @@ bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 		m_firstOccuranceOfVertex.push_back(-1);
 	}
 
-	const int fivePercent = ceil((double)m_VERTEX.size() / 20.0);
+	const int onePercent = (double)m_VERTEX.size() / 100.0;
 	std::wstring message = L"Step 3/3: Constructing DCEL - Part 1/4: Ordering Edges clockwise around ";	
 	message += utils::StringToWString(utils::parseLong(m_VERTEX.size()));
 	message += L" verticies [0/100]";
 	utils::getInstance()->setTextOnStatusBar(2, message.c_str());
 	for(unsigned int i = 0; i < m_VERTEX.size(); i++)
 	{
-		if(i % fivePercent == 0)
+		if(onePercent == 0 || i % onePercent == 0)
 		{
 			const int percentComplete = ceil(((double)i)*100.0/((double)m_VERTEX.size()));
 			std::wstring message = L"Step 3/3: Constructing DCEL - Part 1/4: Ordering Edges clockwise around ";	

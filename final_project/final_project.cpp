@@ -528,6 +528,8 @@ void loadDCEL()
 
 	centreWindowOnDCEL();
 
+	dcel->constructKDTree();
+
 	message = L"Successfully loaded DCEL: ";
 	message += utils::StringToWString(fileOnly).c_str();
 	utils::getInstance()->setTextOnStatusBar(2, message);

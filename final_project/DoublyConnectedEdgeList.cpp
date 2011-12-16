@@ -2,6 +2,8 @@
 #include "stdafx.h"
 #include "common.h"
 #include "DoublyConnectedEdgeList.h"
+#include "KDTree.h"
+#include "KDTreeNode.h"
 #include "utils.h"
 #include <algorithm>
 #include <cmath>
@@ -24,50 +26,6 @@ float isLeft( dnl::Point P0, dnl::Point P1, dnl::Point P2 )
 {
     return (P1.m_x - P0.m_x)*(P2.m_y - P0.m_y) - (P2.m_x - P0.m_x)*(P1.m_y - P0.m_y);
 }
-
-/*double get_angle(const dnl::Point &point1, const dnl::Point &point2)	
-{
-	double x1 = point1.m_x;
-	double y1 = point1.m_y;
-	double x2 = point2.m_x;
-	double y2 = point2.m_y;
-
-	if(x1==x2 && y1==y2)
-	{
-		assert(0);
-		return(-1);
-	}
-
-	double opposite;
-    double adjacent;
-    double angle;
-
-    //calculate vector differences
-    opposite=y1-y2;
-    adjacent=x1-x2;
- 
-    //trig function to calculate angle
-    if(adjacent==0) // to catch vertical co-ord to prevent division by 0
-    {
-		return (opposite >= 0) ? 0 : 180;
-    }
-    else 
-    {
-		//angle = opposite/adjacent;
-        angle=(atan(opposite/adjacent))*180/PI;
-        //the angle calculated will range from +90 degrees to -90 degrees
-        //so the angle needs to be adjusted if point x1 is less or greater then x2
-        if(x1>=x2)
-        {
-            angle=90-angle;
-        }
-        else
-        {
-            angle=270-angle;
-        }
-    } 
-    return angle;
-}*/
 
 double DiamondAngle(double x, double y)
 {
@@ -202,10 +160,7 @@ bool compareAnglePairs (
 
 void DoublyConnectedEdgeList::addEdgesForVertex(const VertexEdgeMap &vertexEdgeMap, const unsigned int vertexIndex)
 {
-	m_VERTEX[vertexIndex];
-
 	// Get all edges incident on the vertex;
-
 	const std::vector<int> &edgesOnVertex = 
 		vertexEdgeMap.m_edges[vertexIndex];
 
@@ -221,7 +176,6 @@ void DoublyConnectedEdgeList::addEdgesForVertex(const VertexEdgeMap &vertexEdgeM
 	for(unsigned int i = 0; i < edgesOnVertex.size(); i++)
 	{
 		const dnl::Point &vertex2 = m_VERTEX[edgesOnVertex[i]];
-		//const double angle = get_angle(vertex, vertex2);
 
 		const double angle = 
 			DiamondAngle(vertex2.m_x - vertex.m_x, vertex2.m_y - vertex.m_y);
@@ -245,20 +199,6 @@ void DoublyConnectedEdgeList::addEdgesForVertex(const VertexEdgeMap &vertexEdgeM
 		}
 		m_edgeCycles.push_back(entry);
 	}
-
-	/*
-	for(unsigned int i = 0; i < edgesOnVertex.size(); i++)
-	{
-		if(edgesOnVertex[i] > vertexIndex)
-		{
-			Edge current;
-			current.vertex1 = vertexIndex;
-			current.vertex2 = edgesOnVertex[i];
-
-			m_edges.push_back(current);
-		}
-	}
-	*/
 }
 
 bool DoublyConnectedEdgeList::constructFaceCycles()
@@ -325,6 +265,55 @@ bool DoublyConnectedEdgeList::constructFaceCycles()
 	return true;
 }
 
+void DoublyConnectedEdgeList::constructKDTree()
+{
+	if(m_KDTree == NULL)
+	{
+		m_KDTree = new KDTree();
+	}
+
+	// Allocate all nodes
+	KDTreeNode *allNodes;
+	{
+		std::wstring message = L"Constructing KDTree - Part 1/2: Simultaniously allocating ";
+		message += utils::StringToWString(utils::parseLong(m_VERTEX.size()));
+		message += L" KDTree nodes at ";
+		message += utils::StringToWString(utils::parseLong(sizeof(KDTreeNode)));
+		message += L" a piece. So ";
+		message += utils::StringToWString(utils::parseDouble(((double)sizeof(KDTreeNode))*m_VERTEX.size()/1024.0/1024.0));
+		message += L"MBs total.";
+		utils::getInstance()->setTextOnStatusBar(2, message.c_str());
+
+		allNodes = new KDTreeNode[m_VERTEX.size()];
+	}
+
+	// Give reference to verticies O(1) operation
+	m_KDTree->m_verticies = &m_VERTEX;
+
+	std::wstring message = L"Constructing KDTree - Part 2/2: Inserting ";	
+	message += utils::StringToWString(utils::parseLong(m_VERTEX.size()));
+	message += L" verticies [0/100]";
+	utils::getInstance()->setTextOnStatusBar(2, message.c_str());
+
+	const int fivePercent = ceil((double)m_VERTEX.size() / 20.0);
+	for(unsigned int i = 0; i < m_VERTEX.size(); i++)
+	{
+		if(i % fivePercent == 0)
+		{
+			const int percentComplete = ceil(((double)i)*100.0/((double)m_VERTEX.size()));
+			std::wstring message = L"Constructing KDTree - Part 2/2: Inserting ";
+			message += utils::StringToWString(utils::parseLong(m_VERTEX.size()));
+			message += L" verticies [";
+			message += utils::StringToWString(utils::parseLong(percentComplete));
+			message += L"/100]";
+			utils::getInstance()->setTextOnStatusBar(2, message.c_str());
+		}
+		KDTreeNode *newNode = &(allNodes[i]);
+		newNode->m_vertexIndex = i;
+		m_KDTree->Insert(newNode);
+	}
+}
+
 bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 {
 	m_VERTEX = vertexEdgeMap.m_verticies;
@@ -339,12 +328,28 @@ bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 		m_firstOccuranceOfVertex.push_back(-1);
 	}
 
+	const int fivePercent = ceil((double)m_VERTEX.size() / 20.0);
+	std::wstring message = L"Step 3/3: Constructing DCEL - Part 1/4: Ordering Edges clockwise around ";	
+	message += utils::StringToWString(utils::parseLong(m_VERTEX.size()));
+	message += L" verticies [0/100]";
+	utils::getInstance()->setTextOnStatusBar(2, message.c_str());
 	for(unsigned int i = 0; i < m_VERTEX.size(); i++)
 	{
+		if(i % fivePercent == 0)
+		{
+			const int percentComplete = ceil(((double)i)*100.0/((double)m_VERTEX.size()));
+			std::wstring message = L"Step 3/3: Constructing DCEL - Part 1/4: Ordering Edges clockwise around ";	
+			message += utils::StringToWString(utils::parseLong(m_VERTEX.size()));
+			message += L" verticies [";
+			message += utils::StringToWString(utils::parseLong(percentComplete));
+			message += L"/100]";
+			utils::getInstance()->setTextOnStatusBar(2, message.c_str());
+		}
+
 		addEdgesForVertex(vertexEdgeMap, i);
 	}
 
-
+	utils::getInstance()->setTextOnStatusBar(2, L"Step 3/3: Constructing DCEL - Part 2/4: Constructing Vertex Cycles");
 	bool success = constructVertexCycles();
 	if(success == false)
 	{
@@ -352,15 +357,7 @@ bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 		return false;
 	}
 
-	// Check that all things that should be populated by this point, are populated
-	for(unsigned int i = 0; i < m_edges.size(); i++)
-	{
-		assert(m_edges[i].vertex1 != -1);
-		assert(m_edges[i].vertex2 != -1);
-		assert(m_edges[i].nextEdgeVertex1 != -1);
-		assert(m_edges[i].nextEdgeVertex2 != -1);
-	}
-
+	utils::getInstance()->setTextOnStatusBar(2, L"Step 3/3: Constructing DCEL - Part 3/4: Constructing Face Cycles");
 	success = constructFaceCycles();
 	if(success == false)
 	{
@@ -368,17 +365,8 @@ bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 		return false;
 	}
 
-	// Check that all things that should be populated by this point, are populated
-	for(unsigned int i = 0; i < m_edges.size(); i++)
-	{
-		assert(m_edges[i].vertex1 != -1);
-		assert(m_edges[i].vertex2 != -1);
-		assert(m_edges[i].face1 != -1);
-		assert(m_edges[i].face2 != -1);
-		assert(m_edges[i].nextEdgeVertex1 != -1);
-		assert(m_edges[i].nextEdgeVertex2 != -1);
-	}
-
+	// Something that can be done later, but let's get it out of the way now.
+	utils::getInstance()->setTextOnStatusBar(2, L"Step 3/3: Constructing DCEL - Part 4/4: Querying and Caching all faces for printing purposes");
 	createFaces();
 
 	return true;

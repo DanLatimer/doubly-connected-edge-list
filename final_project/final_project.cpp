@@ -25,6 +25,7 @@
 #include "VertexEdgeMap.h"
 #include "DoublyConnectedEdgeList.h"
 #include "utils.h"
+#include "Clock.h"
 
 #ifndef WM_MOUSEWHEEL
 #define WM_MOUSEWHEEL WM_MOUSELAST+1 
@@ -44,6 +45,7 @@ UINT uMSH_MOUSEWHEEL = 0;
 #define ID_CLOSE 1004
 #define ID_QUERY_FACE_EDGES 1005
 #define ID_QUERY_VERTEX_EDGES 1006
+#define ID_ORTHOGONAL_RANGE_SEARCH 1007
 
 // Global Variables:
 HINSTANCE hInst;								// current instance
@@ -56,6 +58,18 @@ ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
+
+// Orthogonal Range Search Variables
+bool acceptingPointsForRangeSearch = false;
+bool orthogonalRangeSearchRectangleDefined = false;
+int rangeSearchPointsCollected = 0;
+//data
+dnl::Point rangeSearchPoint1;
+dnl::Point rangeSearchPoint2;
+std::set<int> faceIndicies;
+std::set<int> faceEdgeIndicies;
+
+
 
 /*--------------------------------------------------------------
  * Configuration
@@ -93,10 +107,8 @@ std::vector<Layer> layers;
 std::vector< std::pair<dnl::Point, dnl::Point> > linesToPrint;
 
 DoublyConnectedEdgeList *dcel = NULL;
-GMLFile myGMLFile;
-GMLFile myGMLFile2;
-VertexEdgeMap edgeMap1;
-VertexEdgeMap edgeMap2;
+GMLFile *myGMLFile = NULL;
+VertexEdgeMap *edgeMap = NULL;
 
 dnl::Point LLWindow = dnl::Point(0,0);
 dnl::Point URWindow = dnl::Point(SCREENSIZE_X,SCREENSIZE_Y);
@@ -226,6 +238,28 @@ VOID OnPaint(HWND hWnd, HDC hdc)
 					dcel->print(printMan, 7, layers[i].index);
 				}
 			}
+			else if(layers[i].edgeType == 3)
+			{
+				// Orthogonal Range Search
+				if(dcel != NULL)
+				{
+					// print search rectangle
+					printMan.PrintRectangle(rangeSearchPoint1, rangeSearchPoint2);
+					
+					std::set<int>::iterator iter;
+					for(iter = faceEdgeIndicies.begin(); iter != faceEdgeIndicies.end(); iter++ )
+					{
+						const dnl::Point &begin = dcel->m_VERTEX[dcel->m_edges[*iter].vertex1];
+						const dnl::Point &end = dcel->m_VERTEX[dcel->m_edges[*iter].vertex2];
+
+						printMan.PrintLine(begin, end, &printMan.m_solidRed, 2);
+					}
+					
+//std::set<int> faceIndicies;
+//std::set<int> faceEdgeIndicies;
+
+				}
+			}
 			else
 			{
 				// do nothing
@@ -344,6 +378,18 @@ void closeOpenDCEL()
 		dcel = NULL;
 		layers.clear();
 	}
+
+	if(myGMLFile != NULL)
+	{
+		delete myGMLFile;
+		myGMLFile = NULL;
+	}
+
+	if(edgeMap != NULL)
+	{
+		delete edgeMap;
+		edgeMap = NULL;
+	}
 }
 
 std::string pathToFilename(const std::string &str)
@@ -408,7 +454,8 @@ void loadGML()
 	message += utils::StringToWString(fileOnly).c_str();
 	utils::getInstance()->setTextOnStatusBar(2, message);
 
-	bool success = myGMLFile.parse(filename);
+	myGMLFile = new GMLFile(); 
+	bool success = myGMLFile->parse(filename);
 	if(!success)
 	{
 		ReportError("Unable to parse GML file: " + filename);
@@ -419,7 +466,8 @@ void loadGML()
 	message += utils::StringToWString(fileOnly).c_str();
 	utils::getInstance()->setTextOnStatusBar(2, message);
 
-	success = edgeMap1.construct(&myGMLFile);
+	edgeMap = new VertexEdgeMap();
+	success = edgeMap->construct(myGMLFile);
 	if(!success)
 	{
 		ReportError("Unable to create edgeMap: " + filename);
@@ -431,7 +479,7 @@ void loadGML()
 	utils::getInstance()->setTextOnStatusBar(2, message);
 
 	dcel = new DoublyConnectedEdgeList();
-	success = dcel->construct(edgeMap1);
+	success = dcel->construct(*edgeMap);
 	if(!success)
 	{
 		ReportError("Unable to create DCEL: " + filename);
@@ -583,6 +631,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	hQuerySubMenu = CreatePopupMenu();
     AppendMenu(hQuerySubMenu, MF_STRING, ID_QUERY_FACE_EDGES, L"Edges of &Face");
     AppendMenu(hQuerySubMenu, MF_STRING, ID_QUERY_VERTEX_EDGES, L"Edges on &Vertex");
+    AppendMenu(hQuerySubMenu, MF_STRING, ID_ORTHOGONAL_RANGE_SEARCH, L"Orthogonal &Range Search");
     AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT)hQuerySubMenu, L"&Query DCEL");
 
 	hWnd = CreateWindow(
@@ -735,6 +784,182 @@ void zoomOut()
 	URWindow.m_x = LLWindow.m_x + width;
 	URWindow.m_y = LLWindow.m_y + height;
 
+}
+
+void performOrthogonalRangeSearch()
+{
+	Clock totalTimer;
+	double latMin, latMax, longMin, longMax;
+	utils::getBoundingBox(rangeSearchPoint1, rangeSearchPoint2, latMin, longMin, latMax, longMax);
+
+	std::vector<KDTreeNode*> nodesFound;
+	
+	double rangeSearchTime;
+	bool success = false;
+	{
+		Clock findEdgeTimer;
+
+		nodesFound = dcel->m_KDTree->Search(latMin, longMin, latMax, longMax);
+
+		rangeSearchTime = findEdgeTimer.getMillisecondsElapsed();
+	}
+
+	// Find all edges incident on verticies found
+	std::set<int> vertexEdgeIndicies;
+	int vertexEdgesExamined = 0;
+	double findVertexEdgesTime = 0;
+	for(unsigned int i = 0; i < nodesFound.size(); i++)
+	{
+		std::vector<DirectedEdge> currentEdges;
+
+		Clock findVertexEdgesTimer;
+		success = dcel->findEdgesOfVertex(nodesFound[i]->m_vertexIndex, currentEdges);
+		findVertexEdgesTime += findVertexEdgesTimer.getMillisecondsElapsed();
+
+		assert(success);
+
+		vertexEdgesExamined += currentEdges.size();
+		for(unsigned int i = 0; i < currentEdges.size(); i++)
+		{
+			vertexEdgeIndicies.insert(currentEdges[i].edge);
+		}
+	}
+
+	// Find all faces on those edges
+	Clock findFacesOfEdges;
+	faceIndicies.clear();
+	std::set<int>::iterator iter;
+	for(iter = vertexEdgeIndicies.begin(); iter != vertexEdgeIndicies.end(); iter++)
+	{
+		faceIndicies.insert(dcel->m_edges[*iter].face1);
+		faceIndicies.insert(dcel->m_edges[*iter].face2);
+	}
+	const double findFacesOfEdgesTime = findFacesOfEdges.getMillisecondsElapsed();
+
+
+	// Acquire all edges on those faces
+	double findFaceEdgesTime = 0;
+	int faceEdgesExamined = 0;
+	faceEdgeIndicies.clear();
+	for(iter = faceIndicies.begin(); iter != faceIndicies.end(); iter++)
+	{
+		std::vector<DirectedEdge> currentEdges;
+
+		Clock findFaceEdgesTimer;
+		success = dcel->findEdgesOfFace(*iter, currentEdges);
+		findFaceEdgesTime += findFaceEdgesTimer.getMillisecondsElapsed();
+
+		assert(success);
+
+		faceEdgesExamined += currentEdges.size();
+		for(unsigned int i = 0; i < currentEdges.size(); i++)
+		{
+			faceEdgeIndicies.insert(currentEdges[i].edge);
+		}
+	}
+
+	const double totalTime = totalTimer.getMillisecondsElapsed();
+
+
+	std::wstring queryReport;
+	if(success)
+	{
+		// Orthogonal Range Query
+		queryReport = L"Step 1: Querying verticies within search rectangle (";
+			queryReport += utils::StringToWString(utils::parseDouble(latMin));
+			queryReport += L", ";
+			queryReport += utils::StringToWString(utils::parseDouble(longMin));
+			queryReport += L") (";
+			queryReport += utils::StringToWString(utils::parseDouble(latMax));
+			queryReport += L", ";
+			queryReport += utils::StringToWString(utils::parseDouble(longMax));
+			queryReport += L").\n";
+		queryReport += L"Time expended: ";
+		queryReport += utils::StringToWString(utils::parseDouble(rangeSearchTime));
+			queryReport += L" milliseconds\n";
+		queryReport += L"Total verticies: ";
+			queryReport += utils::StringToWString(utils::parseLong(dcel->m_VERTEX.size()));
+			queryReport += L"\n";
+		queryReport += L"verticies examined: TBD";
+			//queryReport += utils::StringToWString(utils::parseLong(edges.size()));
+			queryReport += L"\n";
+		queryReport += L"Verticies found: ";
+			queryReport += utils::StringToWString(utils::parseLong(nodesFound.size()));
+			queryReport += L"\n\n";
+
+		// Find edges Incident on Verticies
+		queryReport += L"Step 2: Querying edges incident on those verticies.\n";
+		queryReport += L"Time expended: ";
+		queryReport += utils::StringToWString(utils::parseDouble(findVertexEdgesTime));
+			queryReport += L" milliseconds\n";
+		queryReport += L"Total edges: ";
+			queryReport += utils::StringToWString(utils::parseLong(dcel->m_edges.size()));
+			queryReport += L"\n";
+		queryReport += L"Edges examined: ";
+			queryReport += utils::StringToWString(utils::parseLong(vertexEdgesExamined));
+			queryReport += L"\n";
+		queryReport += L"Unique edges found: ";
+			queryReport += utils::StringToWString(utils::parseLong(vertexEdgeIndicies.size()));
+			queryReport += L"\n\n";
+
+		// Find faces on those edges
+		queryReport += L"Step 3: Create a set of faces that are on either side of those edges.\n";
+		queryReport += L"Time expended: ";
+		queryReport += utils::StringToWString(utils::parseDouble(findFacesOfEdgesTime));
+			queryReport += L" milliseconds\n";
+		queryReport += L"Total faces: ";
+			queryReport += utils::StringToWString(utils::parseLong(dcel->m_firstOccuranceOfFace.size()));
+			queryReport += L"\n";
+		queryReport += L"Faces examined: ";
+			queryReport += utils::StringToWString(utils::parseLong(vertexEdgeIndicies.size() * 2));
+			queryReport += L"\n";
+		queryReport += L"Unique faces found: ";
+			queryReport += utils::StringToWString(utils::parseLong(faceIndicies.size()));
+			queryReport += L"\n\n";
+
+
+		// Find edges around on both faces of those edges
+		queryReport += L"Step 4: Querying edges surrounding those faces.\n";
+		queryReport += L"Time expended: ";
+		queryReport += utils::StringToWString(utils::parseDouble(findFaceEdgesTime));
+			queryReport += L" milliseconds\n";
+		queryReport += L"Total edges: ";
+			queryReport += utils::StringToWString(utils::parseLong(dcel->m_edges.size()));
+			queryReport += L"\n";
+		queryReport += L"Edges examined: ";
+			queryReport += utils::StringToWString(utils::parseLong(faceEdgesExamined));
+			queryReport += L"\n";
+		queryReport += L"Unique edges found: ";
+			queryReport += utils::StringToWString(utils::parseLong(faceEdgeIndicies.size()));
+			queryReport += L"\n\n";
+
+		// Total time
+		queryReport += L"Time audit.\n";
+		queryReport += L"Total time expended: ";
+		queryReport += utils::StringToWString(utils::parseDouble(totalTime));
+			queryReport += L" milliseconds\n";
+		queryReport += L"Total data structure query times: ";
+		queryReport += utils::StringToWString(utils::parseDouble(rangeSearchTime + findVertexEdgesTime + findFaceEdgesTime));
+			queryReport += L" milliseconds\n";
+	}
+	else
+	{
+		queryReport = L"Query Failed.";
+	}
+
+	MessageBox(hWnd, queryReport.c_str(), L"Orthogonal Range Query Report", 0);
+
+	std::string layerName("Orthogonal range search (");
+	layerName += utils::parseDouble(latMin);
+	layerName += ", ";
+	layerName += utils::parseDouble(longMin);
+	layerName += ") (";
+	layerName += utils::parseDouble(latMax);
+	layerName += ", ";
+	layerName += utils::parseDouble(longMax);
+	layerName += ")";
+	layers.push_back(Layer(layerName, layers.size()+1, true, 3, 0));
+	::InvalidateRect(hWnd, NULL, TRUE);
 }
 
 bool mouseDown = false;
@@ -907,27 +1132,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 
 				std::vector<DirectedEdge> edges;
-
 				double elapsedTime;
 				bool success = false;
 				{
-					LARGE_INTEGER frequency;        // ticks per second
-					LARGE_INTEGER t1, t2;           // ticks
+					Clock findEdgeTimer;
 
-					// get ticks per second
-					QueryPerformanceFrequency(&frequency);
-
-					// start timer
-					QueryPerformanceCounter(&t1);
-
-					// Perform Timed Action
 					success = dcel->findEdgesOfVertex(vertexIndex, edges);
 
-					// stop timer
-					QueryPerformanceCounter(&t2);
-
-					// compute and print the elapsed time in millisec
-					elapsedTime = (t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart;
+					elapsedTime = findEdgeTimer.getMillisecondsElapsed();
 				}
 
 				std::wstring queryReport;
@@ -960,6 +1172,45 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			::InvalidateRect(hWnd, NULL, TRUE);
 			break;
 		}
+		case ID_ORTHOGONAL_RANGE_SEARCH:
+		{
+			if(dcel == NULL)
+			{
+				MessageBox(hWnd, L"There is no Doubly Connected Edge List open.", L"Error", 0);
+				break;
+			}
+
+			if(dcel->m_KDTree == NULL)
+			{
+				// Construct KDTree for the first time
+				MessageBox(hWnd, L"The datastructure to perform range search (KDTree) has not yet been "
+					L"constructed. This will only happen once per file. Press Okay to construct.", L"Information", 0);
+				dcel->constructKDTree();
+			}
+
+			// Remove previous orthogonal range search if one exists
+			for(unsigned int i = 0; i < layers.size(); i++)
+			{
+				if(layers[i].edgeType == 3)
+				{
+					layers.erase(layers.begin() + i);
+					i--;
+				}
+			}
+
+			std::wstring errorMsg(
+				L"Starting orthogonal range search point collection.\n\n"
+				L"Please click on the map in the two points that defines your search rectangle.\n\n"
+				L"You will not see the rectangle as you are defining it since time for implementation was limitted. "
+				L"The status bar, however will be updated to show your progress.");
+			MessageBox(hWnd, errorMsg.c_str(), L"Orthogonal Range Search Query Rectange Defining.", 0);
+
+			acceptingPointsForRangeSearch = true;
+			rangeSearchPointsCollected = 0;
+
+			utils::getInstance()->setTextOnStatusBar(2, L"Click map to choose first point of your rectangle. (Lat1, Long1, Lat2, Long2)");
+			break;
+		}
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
@@ -978,6 +1229,50 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			dnl::Point begin = screenToUniverse(hWnd, mouseDownPoint);
 			dnl::Point end = screenToUniverse(hWnd, dnl::Point(ptsCursor.x, ptsCursor.y));
+
+			// May be collecting points for range search
+			if(acceptingPointsForRangeSearch)
+			{
+				if(rangeSearchPointsCollected == 0)
+				{
+					rangeSearchPoint1 = end;
+					rangeSearchPointsCollected++;
+
+					std::wstring message(L"Click map to choose second point of your rectangle. (");
+					message += utils::StringToWString(utils::parseDouble(rangeSearchPoint1.m_x));
+					message += L", ";
+					message += utils::StringToWString(utils::parseDouble(rangeSearchPoint1.m_y));
+					message += L", Lat2, Long2)";
+					utils::getInstance()->setTextOnStatusBar(2, message);
+				}
+				else if(rangeSearchPointsCollected == 1)
+				{
+					rangeSearchPoint2 = end;
+
+					// reset global variables
+					orthogonalRangeSearchRectangleDefined = true;
+					acceptingPointsForRangeSearch = false;
+					rangeSearchPointsCollected = 0;
+
+					std::wstring message(L"Orthogonal Range Search Rectangle choosen (");
+					message += utils::StringToWString(utils::parseDouble(rangeSearchPoint1.m_x));
+					message += L", ";
+					message += utils::StringToWString(utils::parseDouble(rangeSearchPoint1.m_y));
+					message += L", ";
+					message += utils::StringToWString(utils::parseDouble(rangeSearchPoint2.m_x));
+					message += L", ";
+					message += utils::StringToWString(utils::parseDouble(rangeSearchPoint2.m_y));
+					message += L")";
+					utils::getInstance()->setTextOnStatusBar(2, message);
+
+					performOrthogonalRangeSearch();
+				}
+				else
+				{
+					assert(0);
+				}
+				break;
+			}
 
 			const double xChange = end.m_x - begin.m_x;
 			const double yChange = end.m_y - begin.m_y;
@@ -1044,6 +1339,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		POINT coord;
 		GetCursorPos(&coord);
+		ScreenToClient(hWnd, &coord);
 		dnl::Point currentMousePosition = screenToUniverse(hWnd, dnl::Point(coord.x, coord.y));
 
 		std::wstring message(L"(");
@@ -1051,7 +1347,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		message += L", ";
 		message += utils::StringToWString(utils::parseDouble(currentMousePosition.m_y));
 		message += L")";
-		
 		utils::getInstance()->setTextOnStatusBar(1, message);
 		break;
 	}

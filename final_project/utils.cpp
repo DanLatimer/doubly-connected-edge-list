@@ -33,6 +33,15 @@ double utils::getSignedDistanceOfPointFromLine(const Point & begin, const Point 
 	return distance;
 }
 
+void utils::getBoundingBox(const dnl::Point &point1, const dnl::Point &point2, double &minX, double &minY, double &maxX, double &maxY)
+{
+	minX = (point1.m_x < point2.m_x) ? point1.m_x : point2.m_x; 
+	maxX = (point1.m_x < point2.m_x) ? point2.m_x : point1.m_x; 
+	minY = (point1.m_y < point2.m_y) ? point1.m_y : point2.m_y; 
+	maxY = (point1.m_y < point2.m_y) ? point2.m_y : point1.m_y; 
+}
+
+
 double utils::distanceOfPointFromLine(const Point & begin, const Point & end, const Point & point)
 {
 	double signedDistance = getSignedDistanceOfPointFromLine(begin, end, point);

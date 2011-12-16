@@ -49,6 +49,7 @@ public:
 
 
 	// Print Complex Structures
+	void PrintRectangle(const dnl::Point &point1, const dnl::Point &point2, Colour *colour = NULL);
 	void PrintPolygon(const std::vector<dnl::Point> &points, Colour *colour = NULL);
 	void PrintRasterGrid(
 		const double minX, 

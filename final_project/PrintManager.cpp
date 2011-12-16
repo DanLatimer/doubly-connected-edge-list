@@ -8,6 +8,7 @@
 #include "Strip.h"
 #include "Point.h"
 #include "RunLengthCoding.h"
+#include "utils.h"
 
 #include <sstream>
 
@@ -164,6 +165,27 @@ void PrintManager::PrintLine(dnl::Point begin, dnl::Point end, Colour *colour/* 
 		transformY(begin.m_y), 
 		transformX(end.m_x), 
 		transformY(end.m_y));
+}
+
+void PrintManager::PrintRectangle(const dnl::Point &point1, const dnl::Point &point2, Colour *colour /*= NULL*/)
+{
+	if(colour == NULL)
+	{
+		colour = &m_solidBlack;
+	}
+
+	double latMin, latMax, longMin, longMax;
+	utils::getBoundingBox(point1, point2, latMin, longMin, latMax, longMax);
+
+	dnl::Point lowerLeft(latMin, longMin);
+	dnl::Point upperLeft(latMin, longMax);
+	dnl::Point upperRight(latMax, longMax);
+	dnl::Point lowerRight(latMax, longMin);
+
+	this->PrintLine(lowerLeft,upperLeft,colour, 5);
+	this->PrintLine(upperLeft,upperRight,colour, 5);
+	this->PrintLine(upperRight,lowerRight,colour, 5);
+	this->PrintLine(lowerRight,lowerLeft,colour, 5);
 }
 
 void PrintManager::PrintText(

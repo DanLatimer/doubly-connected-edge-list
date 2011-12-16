@@ -21,6 +21,8 @@ public:
 	static void expandBoundingBox(dnl::Point &llBox, dnl::Point &urBox, const dnl::Point &llCurrent, const dnl::Point &urCurrent);
 	static void expandBoundingBox(dnl::Point &llBox, dnl::Point &urBox, const dnl::Point &current);
 
+	static void getBoundingBox(const dnl::Point &point1, const dnl::Point &point2, double &minX, double &minY, double &maxX, double &maxY);
+
 	static std::wstring StringToWString(const std::string& s);
 	static std::string WStringToString(const std::wstring& s);
 

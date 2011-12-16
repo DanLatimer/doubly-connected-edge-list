@@ -3,6 +3,7 @@
 #include "common.h"
 #include "VertexEdgeMap.h"
 #include "utils.h"
+#include "math.h"
 
 using namespace std;
 using namespace dnl;
@@ -36,10 +37,33 @@ bool VertexEdgeMap::construct(GMLFile *gmlFile)
 	m_llY = gmlFile->m_llY;
 	m_urX = gmlFile->m_urX;
 	m_urY = gmlFile->m_urY;
+
+	const int fivePercentLines = ceil((double)gmlFile->m_lines.size() / 20.0);
+	std::wstring message = L"Step 2/3: Constructing Vertex-EdgeMap from ";	
+	message += utils::StringToWString(utils::parseLong(gmlFile->m_lines.size()));
+	message += L" lines [0/100] and ";
+	message += utils::StringToWString(utils::parseLong(gmlFile->m_areas.size()));
+	message += L" areas [0/100].";
+
+	utils::getInstance()->setTextOnStatusBar(2, message.c_str());
+
 	
 	// Process GMLFile's lines
 	for(unsigned int i = 0; i < gmlFile->m_lines.size(); i++)
 	{
+		if(i % fivePercentLines == 0)
+		{
+			const int percentComplete = ceil(((double)i)*100.0/((double)gmlFile->m_lines.size()));
+			std::wstring message = L"Step 2/3: Constructing Vertex-EdgeMap from ";	
+			message += utils::StringToWString(utils::parseLong(gmlFile->m_lines.size()));
+			message += L" lines [";
+			message += utils::StringToWString(utils::parseLong(percentComplete));
+			message += L"/100] and ";
+			message += utils::StringToWString(utils::parseLong(gmlFile->m_areas.size()));
+			message += L" areas [0/100].";
+			utils::getInstance()->setTextOnStatusBar(2, message.c_str());
+		}
+
 		// Process a line;
 		const dnl::Polyline &currentLine = gmlFile->m_lines[i];
 
@@ -75,9 +99,31 @@ bool VertexEdgeMap::construct(GMLFile *gmlFile)
 		}
 	}
 
+	const int fivePercentAreas = ceil((double)gmlFile->m_areas.size() / 20.0);
+	std::wstring message2 = L"Step 2/3: Constructing Vertex-EdgeMap from ";	
+	message2 += utils::StringToWString(utils::parseLong(gmlFile->m_lines.size()));
+	message2 += L" lines [100/100] and ";
+	message2 += utils::StringToWString(utils::parseLong(gmlFile->m_areas.size()));
+	message2 += L" areas [0/100].";
+
+	utils::getInstance()->setTextOnStatusBar(2, message2.c_str());
+
 	// Process GMLFile's areas
 	for(unsigned int i = 0; i < gmlFile->m_areas.size(); i++)
 	{
+		if(i % fivePercentAreas == 0)
+		{
+			const int percentComplete = ceil(((double)i)*100.0/((double)gmlFile->m_areas.size()));
+			std::wstring message = L"Step 2/3: Constructing Vertex-EdgeMap from ";	
+			message += utils::StringToWString(utils::parseLong(gmlFile->m_lines.size()));
+			message += L" lines [100/100] and ";
+			message += utils::StringToWString(utils::parseLong(gmlFile->m_areas.size()));
+			message += L" areas [";
+			message += utils::StringToWString(utils::parseLong(percentComplete));
+			message += L"/100].";
+			utils::getInstance()->setTextOnStatusBar(2, message.c_str());
+		}
+
 		// Process a line;
 		const dnl::Polygon &currentPolygon = gmlFile->m_areas[i];
 

@@ -181,6 +181,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Clock.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DoublyConnectedEdgeList.cpp"
 				>
 			</File>
@@ -194,6 +198,14 @@
 			</File>
 			<File
 				RelativePath=".\InputBox.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\KDTree.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\KDTreeNode.cpp"
 				>
 			</File>
 			<File
@@ -275,6 +287,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Clock.h"
+				>
+			</File>
+			<File
 				RelativePath=".\common.h"
 				>
 			</File>
@@ -292,6 +308,14 @@
 			</File>
 			<File
 				RelativePath=".\InputBox.h"
+				>
+			</File>
+			<File
+				RelativePath=".\KDTree.h"
+				>
+			</File>
+			<File
+				RelativePath=".\KDTreeNode.h"
 				>
 			</File>
 			<File

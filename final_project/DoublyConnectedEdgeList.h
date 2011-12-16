@@ -5,6 +5,7 @@
 
 #include "PrintManager.h"
 #include "VertexEdgeMap.h"
+#include "KDTree.h"
 
 class Edge : public autoserial::ISerializable  
 {
@@ -64,14 +65,18 @@ public:
 class DoublyConnectedEdgeList : public autoserial::ISerializable 
 {
 public:
-	// We donate the gmlFile to the DCEL when constructing it.
-	DoublyConnectedEdgeList() { }
+	DoublyConnectedEdgeList() : m_KDTree(NULL) { }
 
 	bool construct(const VertexEdgeMap &vertexEdgeMap);
 	void print(PrintManager &printMan, int printWhat, int index = 0);
 
 	bool findEdgesOfFace(int faceIndex, std::vector<DirectedEdge> &edges);
 	bool findEdgesOfVertex(int vertexIndex, std::vector<DirectedEdge> &edges);
+
+	void constructKDTree();
+
+	// Cached variable
+	KDTree *m_KDTree;
 
 private:
 	void addEdgesForVertex(const VertexEdgeMap &vertexEdgeMap, const unsigned int vertexIndex);
@@ -89,7 +94,7 @@ private:
 	// Data
 	AS_CLASSDEF(DoublyConnectedEdgeList)                     // Declare class name
     AS_MEMBERS                                               // Start list of class members
-        AS_PRIVATEITEM(std::vector<dnl::Point>, m_VERTEX)
+        AS_PUBLICITEM(std::vector<dnl::Point>, m_VERTEX)
         
 		AS_PUBLICITEM(std::vector<Edge>, m_edges)
         AS_PUBLICITEM(std::vector<int>, m_firstOccuranceOfVertex)
@@ -110,4 +115,5 @@ private:
 	// Constructed when needed and saved only in non-persistent memory.
 	std::vector< std::vector<dnl::Point> > m_FACES;
 	std::vector< std::vector<DirectedEdge> > m_FACEEdges;
+
 };

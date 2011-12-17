@@ -36,7 +36,8 @@ double DiamondAngle(double x, double y)
 }
 
 
-bool DoublyConnectedEdgeList::constructVertexCycles()
+bool DoublyConnectedEdgeList::constructVertexCycles(
+	std::vector<EdgeCycleEntry> &edgeCycles, std::vector<int> &edgeCycleVertexIndex)
 {
 	int numEdges = 0;
 	int currentVertexCycle = -1;
@@ -67,9 +68,9 @@ bool DoublyConnectedEdgeList::constructVertexCycles()
 
 		// Process the first member (vi, vr) of the input edge list of vi.
 		// Edge only entered if r > i
-		int t = m_edgeCycleVertexIndex[i];
+		int t = edgeCycleVertexIndex[i];
 		assert(t != -1);
-		int r = m_edgeCycles[t].vertex;
+		int r = edgeCycles[t].vertex;
 
 		if(r > i)
 		{
@@ -95,10 +96,10 @@ bool DoublyConnectedEdgeList::constructVertexCycles()
 		}
 
 		// Complete the construction of the vertex cycle for vi
-		while(m_edgeCycles[t].next != m_edgeCycleVertexIndex[i])
+		while(edgeCycles[t].next != edgeCycleVertexIndex[i])
 		{
-			t = m_edgeCycles[t].next;
-			r = m_edgeCycles[t].vertex;
+			t = edgeCycles[t].next;
+			r = edgeCycles[t].vertex;
 			if(r > i)
 			{
 				// Enter into vertex cycle
@@ -158,7 +159,10 @@ bool compareAnglePairs (
 	return left.first < right.first; 
 }
 
-void DoublyConnectedEdgeList::addEdgesForVertex(const VertexEdgeMap &vertexEdgeMap, const unsigned int vertexIndex)
+void DoublyConnectedEdgeList::addEdgesForVertex(const VertexEdgeMap &vertexEdgeMap, 
+	const unsigned int vertexIndex, 
+	std::vector<EdgeCycleEntry> &edgeCycles, 
+	std::vector<int> &edgeCycleVertexIndex)
 {
 	// Get all edges incident on the vertex;
 	const std::vector<int> &edgesOnVertex = 
@@ -185,19 +189,19 @@ void DoublyConnectedEdgeList::addEdgesForVertex(const VertexEdgeMap &vertexEdgeM
 
 	std::sort(angles.begin(), angles.end(), compareAnglePairs);
 	
-	// Add Entry in m_edgeCycleVertexIndex (aka H)
-	const int firstEntryForVertex = m_edgeCycles.size();
-	m_edgeCycleVertexIndex.push_back(firstEntryForVertex);
+	// Add Entry in edgeCycleVertexIndex (aka H)
+	const int firstEntryForVertex = edgeCycles.size();
+	edgeCycleVertexIndex.push_back(firstEntryForVertex);
 
-	// Add entries in m_edgeCycles
+	// Add entries in edgeCycles
 	for(unsigned int i = 0; i < angles.size(); i++)
 	{
-		EdgeCycleEntry entry(angles[i].second, m_edgeCycles.size()+1);
+		EdgeCycleEntry entry(angles[i].second, edgeCycles.size()+1);
 		if(i == angles.size() - 1)
 		{
 			entry.next = firstEntryForVertex;
 		}
-		m_edgeCycles.push_back(entry);
+		edgeCycles.push_back(entry);
 	}
 }
 
@@ -333,6 +337,8 @@ bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 	message += utils::StringToWString(utils::parseLong(m_VERTEX.size()));
 	message += L" verticies [0/100]";
 	utils::getInstance()->setTextOnStatusBar(2, message.c_str());
+	std::vector<EdgeCycleEntry> edgeCycles;
+	std::vector<int> edgeCycleVertexIndex;
 	for(unsigned int i = 0; i < m_VERTEX.size(); i++)
 	{
 		if(onePercent == 0 || i % onePercent == 0)
@@ -346,11 +352,11 @@ bool DoublyConnectedEdgeList::construct(const VertexEdgeMap &vertexEdgeMap)
 			utils::getInstance()->setTextOnStatusBar(2, message.c_str());
 		}
 
-		addEdgesForVertex(vertexEdgeMap, i);
+		addEdgesForVertex(vertexEdgeMap, i, edgeCycles, edgeCycleVertexIndex);
 	}
 
 	utils::getInstance()->setTextOnStatusBar(2, L"Step 3/3: Constructing DCEL - Part 2/4: Constructing Vertex Cycles");
-	bool success = constructVertexCycles();
+	bool success = constructVertexCycles(edgeCycles, edgeCycleVertexIndex);
 	if(success == false)
 	{
 		ReportError("Unable to construct DCEL's Vertex Cycles");

@@ -79,8 +79,12 @@ public:
 	KDTree *m_KDTree;
 
 private:
-	void addEdgesForVertex(const VertexEdgeMap &vertexEdgeMap, const unsigned int vertexIndex);
-	bool constructVertexCycles();
+	void addEdgesForVertex(const VertexEdgeMap &vertexEdgeMap, 
+		const unsigned int vertexIndex, 
+		std::vector<EdgeCycleEntry> &edgeCycles, 
+		std::vector<int> &edgeCycleVertexIndex);
+	bool constructVertexCycles(std::vector<EdgeCycleEntry> &edgeCycles, 
+		std::vector<int> &edgeCycleVertexIndex);
 	bool constructFaceCycles();
 	void createFaces();
 	int findNextNonDangle(
@@ -100,8 +104,8 @@ private:
         AS_PUBLICITEM(std::vector<int>, m_firstOccuranceOfVertex)
 		AS_PUBLICITEM(std::vector<int>, m_firstOccuranceOfFace)
         
-		AS_PRIVATEITEM(std::vector<int>, m_edgeCycleVertexIndex)
-        AS_PRIVATEITEM(std::vector<EdgeCycleEntry>, m_edgeCycles)
+		//AS_PRIVATEITEM(std::vector<int>, m_edgeCycleVertexIndex)
+        //AS_PRIVATEITEM(std::vector<EdgeCycleEntry>, m_edgeCycles)
     
         AS_PUBLICITEM(double, m_llX)
         AS_PUBLICITEM(double, m_llY)
@@ -117,3 +121,17 @@ private:
 	std::vector< std::vector<DirectedEdge> > m_FACEEdges;
 
 };
+
+/*
+// The third vertex
+int vertex = 3; 
+
+// The index of the first edge in vertex 3's edge cycle
+int firstEdgeCycle = edgeCycleVertexIndex[i]; 
+
+// The first edge's ending vertex (with the starting vertex being 3)
+int endingVertex = edgeCycle[firstEdgeCycle].vertex;
+
+// The index into edgeCycle to get the next clockwise edge around vertex 3
+int nextEdgeCycleIndex = edgeCycle[firstEdgeCycle].next;
+*/

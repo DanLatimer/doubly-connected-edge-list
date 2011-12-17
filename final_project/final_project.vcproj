@@ -273,10 +273,6 @@
 				RelativePath=".\VertexEdgeMap.cpp"
 				>
 			</File>
-			<File
-				RelativePath=".\VertexMultiEdgeMap.cpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -373,10 +369,6 @@
 			</File>
 			<File
 				RelativePath=".\VertexEdgeMap.h"
-				>
-			</File>
-			<File
-				RelativePath=".\VertexMultiEdgeMap.h"
 				>
 			</File>
 		</Filter>

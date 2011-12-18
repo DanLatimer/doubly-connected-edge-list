@@ -103,9 +103,6 @@ private:
 		AS_PUBLICITEM(std::vector<Edge>, m_edges)
         AS_PUBLICITEM(std::vector<int>, m_firstOccuranceOfVertex)
 		AS_PUBLICITEM(std::vector<int>, m_firstOccuranceOfFace)
-        
-		//AS_PRIVATEITEM(std::vector<int>, m_edgeCycleVertexIndex)
-        //AS_PRIVATEITEM(std::vector<EdgeCycleEntry>, m_edgeCycles)
     
         AS_PUBLICITEM(double, m_llX)
         AS_PUBLICITEM(double, m_llY)
